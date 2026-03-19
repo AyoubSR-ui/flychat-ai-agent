@@ -25,28 +25,42 @@ LANG_MAP = {
 
 
 def detect_language(text: str, locked_language: str | None) -> str:
-    """
-    Detect language of text. If a language is already locked, return it.
-    Falls back to French (primary market) if detection is uncertain.
-    Also detects Darija written in Latin script.
-    """
-    if locked_language:
-        return locked_language
+    text_lower = text.lower().strip()
 
-    # Check for Latin-script Darija patterns first
-    darija_patterns = [
-        r"\b(wach|wesh|ana|nta|hna|rabi|labas|bghit|3andi|khoya|bzaf|mzyan|kifash|ndirek|lwaqt|daba|mazal|sahbi)\b",
-        r"\b(chofli|chof|goul|goulha|3la|fi|men|had|hada|hadi|dial)\b",
+    darija_numbers = bool(re.search(r'[39782]', text))
+
+    darija_words = [
+        r"\b(wach|wesh|wash|ana|nta|ntia|hna|rabi|labas|bghit|bghina|3andi|3andek|3andkom|khoya|bzaf|mzyan|kifash|ndirek|lwaqt|daba|mazal|sahbi|hab|na3raf|ndir|ndirlak|na9der|9der|kayn|makaynch|chofli|chof|goul|goulha|dial|had|hada|hadi|rani|raha|rah|walo|baraka|3la|3lash|fhamt|smahli|wakha|yallah|safi|barak|felous|taman|chwiya|kima|kif|feen|mneen|imta|3lah|bach|ila|gaat|ga3|shi|mashi|hnaya|lhih)\b",
     ]
-    for pattern in darija_patterns:
-        if re.search(pattern, text.lower()):
+    for pattern in darija_words:
+        if re.search(pattern, text_lower):
             return "ar-latin"
 
-    detected = get_detector().detect_language_of(text)
-    if detected is None:
-        return "fr"  # default to French for Algerian market
+    if darija_numbers and len(text.split()) <= 6:
+        return "ar-latin"
 
-    return LANG_MAP.get(detected, "fr")
+    arabic_chars = len(re.findall(r'[\u0600-\u06FF]', text))
+    if arabic_chars > 2:
+        return "ar"
+
+    french_words = r"\b(bonjour|merci|oui|non|je|tu|il|nous|vous|est|les|des|une|pour|avec|sur|dans|que|qui|comment|quel|quelle|parle|veux|voulez|pouvez|avez|avoir|salut|bonsoir|produit|commande|annuler|livraison)\b"
+    if re.search(french_words, text_lower):
+        return "fr"
+
+    english_words = r"\b(hello|hi|yes|no|please|thank|thanks|order|cancel|product|available|price|want|need|help|what|how|can)\b"
+    if re.search(english_words, text_lower):
+        return "en"
+
+    detected = get_detector().detect_language_of(text)
+    lang = LANG_MAP.get(detected, None) if detected else None
+
+    if lang is None:
+        return "ar-latin"
+
+    if lang == "fr" and locked_language in ("ar", "ar-latin"):
+        return locked_language
+
+    return lang
 
 
 def build_system_prompt(
@@ -59,33 +73,42 @@ def build_system_prompt(
     ai_flow_state: str | None,
 ) -> str:
 
-    # Language instruction
     lang_instructions = {
-        "fr": "Réponds UNIQUEMENT en français.",
+        "fr": "Réponds UNIQUEMENT en français. Même si le client écrit en darija, réponds en français.",
         "en": "Reply ONLY in English.",
-        "ar": "أجب باللغة العربية فقط. استخدم الدارجة الجزائرية إذا كتب العميل بها.",
-        "ar-latin": "Réponds en Darija algérienne en alphabet latin uniquement. Exemple: 'labas, kifash naawenek?'",
+        "ar": "أجب بالدارجة الجزائرية فقط. مثال: إيه نقدر نعاونك، واش تحب تطلب؟",
+        "ar-latin": "CRITICAL: Reply ONLY in Algerian Darija using Latin letters. Examples: 'labas, kifash naawenek?', 'wakha, ayy produit trid?', 'safi, nkamlo lorder'. NEVER reply in English or French when customer writes Darija Latin.",
     }
-    lang_rule = lang_instructions.get(language, lang_instructions["fr"])
+    lang_rule = lang_instructions.get(language, lang_instructions["ar-latin"])
 
-    greeting_rule = (
-        "Accueille le client chaleureusement en une phrase courte."
-        if is_first_turn
-        else "Ne répète PAS de salutation — la conversation est déjà en cours."
-    ) if language == "fr" else (
-        "Greet the customer warmly in one short sentence."
-        if is_first_turn
-        else "Do NOT repeat a greeting — conversation is already in progress."
-    ) if language == "en" else (
-        "رحب بالعميل بجملة قصيرة ودافئة."
-        if is_first_turn
-        else "لا تكرر التحية — المحادثة جارية بالفعل."
-    )
+    if language == "fr":
+        greeting_rule = (
+            "Accueille le client chaleureusement en une phrase courte."
+            if is_first_turn
+            else "Ne répète PAS de salutation — la conversation est déjà en cours."
+        )
+    elif language == "en":
+        greeting_rule = (
+            "Greet the customer warmly in one short sentence."
+            if is_first_turn
+            else "Do NOT repeat a greeting — conversation is already in progress."
+        )
+    elif language == "ar":
+        greeting_rule = (
+            "رحب بالعميل بجملة قصيرة ودافئة."
+            if is_first_turn
+            else "لا تكرر التحية — المحادثة جارية بالفعل."
+        )
+    else:
+        greeting_rule = (
+            "Salute the customer in Darija Latin: e.g. 'salam, kifash naawenek?'"
+            if is_first_turn
+            else "Do NOT repeat greeting — conversation already started."
+        )
 
-    # Build clean product list
     if products:
         product_lines = []
-        for p in products:
+        for i, p in enumerate(products, 1):
             variants_str = ""
             if p.variants:
                 try:
@@ -95,13 +118,12 @@ def build_system_prompt(
                 except Exception:
                     pass
             product_lines.append(
-                f"• {p.name} — {p.price:,.0f} DZD (stock: {p.stock}){variants_str}"
+                f"{i}. {p.name} — {p.price:,.0f} DZD (stock: {p.stock}){variants_str}"
             )
         product_catalog = "\n".join(product_lines)
     else:
         product_catalog = "Aucun produit disponible." if language == "fr" else "No products available."
 
-    # Recent orders context
     if recent_orders:
         order_lines = [
             f"• #{o.orderNumber} | {o.status} | {o.customerName or 'unknown'} | {o.customerPhone or 'no phone'}"
@@ -111,7 +133,6 @@ def build_system_prompt(
     else:
         orders_context = "Aucune commande récente." if language == "fr" else "No recent orders."
 
-    # Flow state context
     flow_note = ""
     if ai_flow_state == "order_created":
         flow_note = "\nNOTE: A new order was just created for this customer. Confirm warmly without repeating all details."
@@ -122,43 +143,49 @@ def build_system_prompt(
 
     return f"""You are the AI customer support agent for "{store_name}". You help customers place, track, and cancel orders.
 
-LANGUAGE RULE (CRITICAL):
+LANGUAGE RULE (CRITICAL — NO EXCEPTIONS):
 {lang_rule}
 {greeting_rule}
+NEVER say "I only communicate in [language]" — you speak ALL languages, you just reply in the detected one.
+NEVER switch language mid-conversation unless the customer explicitly switches first.
 
 BEHAVIOR:
 - Be concise, warm, and professional.
 - ONLY answer what the customer asks. Do not volunteer extra info.
 - Never mention you are an AI unless directly asked.
 - Never show raw data, IDs, or internal formats.
-- NEVER say "I only communicate in [language]" — you speak ALL languages.
-- NEVER use markdown formatting: no **bold**, no *italic*, no # headers.{flow_note}
+- NEVER use markdown: no **bold**, no *italic*, no # headers, no ~~strikethrough~~.{flow_note}
 
 CAPABILITIES:
 1. Answer product questions (price, variants, stock).
 2. Collect order details and confirm orders.
 3. Cancel or check status of existing orders.
 
-RESPONSE FORMAT (CRITICAL):
-- Keep replies SHORT and natural — one to three sentences maximum unless showing an order summary.
-- NEVER use markdown: no **bold**, no *italic*, no bullet points with -.
-- When listing products use EXACTLY this format with each product on its own line:
+RESPONSE FORMAT — FOLLOW EXACTLY, NO EXCEPTIONS:
+- Maximum 2-3 sentences per reply unless showing order summary or product list.
+- ZERO markdown: no **bold**, no *italic*, no bullet dashes for products.
+- NEVER put multiple products on one line.
+- NEVER use dashes between products inline.
+
+PRODUCT LIST FORMAT — use EXACTLY this structure, each product on its own numbered line:
 
 1. [Product name] — [price] DZD
-   Variants: [variants]
+   Variants: [variant1], [variant2]
 
 2. [Product name] — [price] DZD
-   Variants: [variants]
-- For order confirmation summary, use EXACTLY this format (each field on its own line):
+   Variants: [variant1], [variant2]
 
-  [Confirm phrase]:
-  - Product: [name + variant]
-  - Quantity: [qty]
-  - Name: [customer name]
-  - Phone: [phone]
-  - Wilaya: [wilaya]
-  - Address: [address]
-  [Is everything correct?]
+ORDER CONFIRMATION FORMAT — use EXACTLY this structure:
+
+[Confirmation phrase in correct language]:
+- Produit: [name + variant]
+- Quantite: [qty]
+- Nom: [customer name]
+- Telephone: [phone]
+- Wilaya: [wilaya]
+- Adresse: [address]
+
+[Is everything correct? in correct language]
 
 - Send ONE single message only. Never split into two replies.
 - After customer confirms: short acknowledgment only, no list repetition.
@@ -205,29 +232,25 @@ Schema:
 }
 
 Rules:
-- canAutoCreate = true ONLY when ALL 6 fields are present AND customer has confirmed (yes/oui/wah/نعم/ايه)
+- canAutoCreate = true ONLY when ALL 6 fields are present AND customer has confirmed (yes/oui/wah/wakha/ايه/نعم)
 - cancelPhone: extract phone number when intent is cancel_order
 - For product_inquiry and other intents, orderData and cancelPhone can be null"""
 
 
 async def extract_order(history: list, products: list) -> dict:
-    """Run silent extraction — returns structured action data, emits nothing."""
-    # Only extract for actionable messages
     last_customer = next(
         (m.content for m in reversed(history) if m.role == "customer"), ""
     )
 
-    # Quick skip for obvious non-order intents
     skip_patterns = [
-        r"\b(merci|thanks|thank you|shukran|شكرا)\b",
-        r"\b(produit|product|disponible|available|prix|price)\b",
+        r"\b(merci|thanks|thank you|shukran|شكرا|yishkrek|barak)\b",
     ]
-    for pattern in skip_patterns[:1]:  # only skip thanks
+    for pattern in skip_patterns:
         if re.search(pattern, last_customer.lower()):
             return {"intent": "other", "canAutoCreate": False, "orderData": None, "cancelPhone": None}
 
     messages = [{"role": "system", "content": EXTRACTION_PROMPT}]
-    for m in history[-10:]:  # last 10 messages for context
+    for m in history[-10:]:
         role = "user" if m.role == "customer" else "assistant"
         messages.append({"role": role, "content": m.content})
 
@@ -246,29 +269,21 @@ async def extract_order(history: list, products: list) -> dict:
 
 
 async def process_message(request) -> dict:
-    """
-    Main entry point called by FlyChat backend.
-    Returns: { reply, detectedLanguage, action }
-    """
     history = request.history
     last_customer_msg = next(
         (m.content for m in reversed(history) if m.role == "customer"), ""
     )
 
-    # 1. Detect language
-    # Always detect from latest customer message — never trust locked language blindly
+    # Always detect from latest customer message
     language = detect_language(last_customer_msg, None)
 
-   # Only use locked language if current message is very short (1-2 words like "ok", "oui")
-   # to avoid switching on ambiguous confirmations
+    # For very short messages (ok, oui, wakha) respect locked language
     if request.detectedLanguage and len(last_customer_msg.strip().split()) <= 2:
-      language = request.detectedLanguage
+        language = request.detectedLanguage
 
-    # 2. Determine if first turn
     prior_turns = [m for m in history[:-1] if m.role in ("customer", "agent")]
     is_first_turn = len(prior_turns) == 0
 
-    # 3. Build system prompt
     system_prompt = build_system_prompt(
         store_name=request.storeName,
         ai_system_prompt=request.aiSystemPrompt,
@@ -279,15 +294,13 @@ async def process_message(request) -> dict:
         ai_flow_state=request.aiFlowState,
     )
 
-    # 4. Build message history for OpenAI (customer + agent only, exclude bot spam)
     openai_messages = [{"role": "system", "content": system_prompt}]
-    for m in history[-20:]:  # cap at 20 messages to control tokens
+    for m in history[-20:]:
         if m.role == "customer":
             openai_messages.append({"role": "user", "content": m.content})
         elif m.role in ("agent", "bot"):
             openai_messages.append({"role": "assistant", "content": m.content})
 
-    # 5. Generate conversational reply
     response = await client.chat.completions.create(
         model="gpt-4.1-mini",
         max_tokens=600,
@@ -296,10 +309,8 @@ async def process_message(request) -> dict:
     )
     reply = response.choices[0].message.content.strip()
 
-    # 6. Run extraction silently (no second message ever)
     extraction = await extract_order(history, request.products)
 
-    # 7. Build action for backend to execute silently
     action = {"type": "none"}
 
     if extraction.get("canAutoCreate") and extraction.get("orderData"):
