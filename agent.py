@@ -435,16 +435,15 @@ async def process_message(request) -> dict:
     # Detect from latest customer message
     language = detect_language(last_customer_msg, None)
 
-    # Once language is locked — only switch if customer CLEARLY writes another language
-    # Short messages, slang, unknown words → keep locked language
+    # Language locking logic — word_count always defined first
+    word_count = len(last_customer_msg.strip().split())
     if request.detectedLanguage:
-     word_count = len(last_customer_msg.strip().split())
-    # Keep locked if: short message, or same language family, or detection uncertain
-    if word_count <= 3 or language == request.detectedLanguage:
-        language = request.detectedLanguage
-    # Only switch if clearly different AND long enough to be sure
-    elif word_count < 5:
-        language = request.detectedLanguage
+        # Keep locked if: short message, or same language, or detection uncertain
+        if word_count <= 3 or language == request.detectedLanguage:
+            language = request.detectedLanguage
+        # Only switch if clearly different AND long enough to be sure
+        elif word_count < 5:
+            language = request.detectedLanguage
 
     prior_turns = [m for m in history[:-1] if m.role in ("customer", "agent")]
     is_first_turn = len(prior_turns) == 0
