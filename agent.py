@@ -6,10 +6,16 @@ from lingua import Language, LanguageDetectorBuilder
 
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Build language detector once at startup
-detector = LanguageDetectorBuilder.from_languages(
-    Language.FRENCH, Language.ENGLISH, Language.ARABIC
-).build()
+# Lazy load — built on first request, not at startup
+_detector = None
+
+def get_detector():
+    global _detector
+    if _detector is None:
+        _detector = LanguageDetectorBuilder.from_languages(
+            Language.FRENCH, Language.ENGLISH, Language.ARABIC
+        ).build()
+    return _detector
 
 LANG_MAP = {
     Language.FRENCH: "fr",
@@ -36,7 +42,7 @@ def detect_language(text: str, locked_language: str | None) -> str:
         if re.search(pattern, text.lower()):
             return "ar-latin"
 
-    detected = detector.detect_language_of(text)
+    detected = get_detector().detect_language_of(text)
     if detected is None:
         return "fr"  # default to French for Algerian market
 
