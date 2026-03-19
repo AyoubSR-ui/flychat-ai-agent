@@ -92,3 +92,8 @@ async def chat(
     except Exception as e:
         print(f"[ERROR] /chat failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("PORT", 8080))
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
