@@ -232,7 +232,7 @@ async def extract_order(history: list, products: list) -> dict:
         messages.append({"role": role, "content": m.content})
 
     response = await client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         max_tokens=400,
         temperature=0,
         response_format={"type": "json_object"},
@@ -289,7 +289,7 @@ async def process_message(request) -> dict:
 
     # 5. Generate conversational reply
     response = await client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         max_tokens=600,
         temperature=0.4,
         messages=openai_messages,
