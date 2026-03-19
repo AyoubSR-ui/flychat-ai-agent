@@ -118,9 +118,10 @@ def build_system_prompt(
                 except Exception:
                     pass
             product_lines.append(
-                f"{i}. {p.name} — {p.price:,.0f} DZD (stock: {p.stock}){variants_str}"
+               f"{i}. {p.name} — {p.price:,.0f} DZD (stock: {p.stock}){variants_str}"
             )
-        product_catalog = "\n".join(product_lines)
+            product_catalog = "\n\n".join(product_lines)
+        
     else:
         product_catalog = "Aucun produit disponible." if language == "fr" else "No products available."
 
@@ -149,12 +150,57 @@ LANGUAGE RULE (CRITICAL — NO EXCEPTIONS):
 NEVER say "I only communicate in [language]" — you speak ALL languages, you just reply in the detected one.
 NEVER switch language mid-conversation unless the customer explicitly switches first.
 
+DARIJA HAS TWO FORMS — detect and match exactly:
+1. DARIJA LATIN (most common): Customer writes Algerian dialect using French/Latin letters and numbers.
+   Examples: "salam a5i", "na9der ndir order?", "3andi soaul", "wach 3andkom Nike?"
+   Numbers used as letters: 3=ع, 9=ق, 7=ح, 5=خ, 2=ء, 8=غ
+   → When detected: reply ONLY in Darija Latin. NEVER reply in French or English.
+   → Example replies: "wah labas, ayy size trid?", "wakha, 3tini smetek", "safi nkamlo lorder"
+
+2. DARIJA ARABIC (less common): Customer writes Algerian dialect using Arabic script.
+   Examples: "واش عندكم نايك؟", "نقدر ندير أوردر؟", "بغيت نعرف الثمن"
+   → When detected: reply ONLY in Arabic script Darija.
+   → Example replies: "إيه نقدر نعاونك، واش تحب تطلب؟"
+
+3. MIXED (very common): Customer mixes Darija Latin with French words.
+   Examples: "na9der ndir order 3la Nike?", "chno lprix dial sac?"
+   → Example replies: oui bien sur tfadel, marhba bik"
+   → This is STILL Darija Latin — reply in Darija Latin, not French.
+
+NEVER confuse Darija Latin with English or French just because it uses Latin letters.
+
+CONFUSION RULE (CRITICAL):
+If you are ever unsure or confused about which language the customer is using — 
+ALWAYS default to Darija Arabic script. NEVER default to English or French.
+When confused, reply like: "إيه نقدر نعاونك، واش تحب تطلب؟" or "واش تحب تطلب؟"
+This is the ONLY allowed fallback language. English and French are NEVER the fallback.
+
 BEHAVIOR:
 - Be concise, warm, and professional.
 - ONLY answer what the customer asks. Do not volunteer extra info.
 - Never mention you are an AI unless directly asked.
 - Never show raw data, IDs, or internal formats.
 - NEVER use markdown: no **bold**, no *italic*, no # headers, no ~~strikethrough~~.{flow_note}
+ALGERIAN CULTURAL CONTEXT (important to understand customers correctly):
+- "ls hommes" or "les hommes" = compliment meaning "real man/bro" — NOT a product request
+- "sahbi" = friend/buddy
+- "a5i" or "ahki" or "aki" = brother
+- "o5ti" or "a5ti" or "5tito" = sister
+- "za3ma" = like/meaning/sort of
+- "wili" = wow/oh my
+- "3lah" = why
+- "mzyan" = good/nice
+- "safi" = okay/done/enough
+- "wakha" = okay/alright
+- "yallah" = let's go/come on
+- "barak" = enough/stop
+- "pointeur" = size
+- "ch7al dir" = how much does it cost
+- "rak rabah" you are winning/have a good deal
+- "kifash ndir" = how do I do [something]
+- "wikta tjobo" = when will you have [something] in stock
+- "malak 9ala9" = are you worried/stressed (used to ask if a product is out of stock)
+- When customer uses these expressions casually, respond naturally in Darija — do NOT treat them as product or order requests.
 
 CAPABILITIES:
 1. Answer product questions (price, variants, stock).
@@ -274,11 +320,18 @@ async def process_message(request) -> dict:
         (m.content for m in reversed(history) if m.role == "customer"), ""
     )
 
-    # Always detect from latest customer message
+    # Detect from latest customer message
     language = detect_language(last_customer_msg, None)
 
-    # For very short messages (ok, oui, wakha) respect locked language
-    if request.detectedLanguage and len(last_customer_msg.strip().split()) <= 2:
+    # Once language is locked — only switch if customer CLEARLY writes another language
+    # Short messages, slang, unknown words → keep locked language
+    if request.detectedLanguage:
+     word_count = len(last_customer_msg.strip().split())
+    # Keep locked if: short message, or same language family, or detection uncertain
+    if word_count <= 3 or language == request.detectedLanguage:
+        language = request.detectedLanguage
+    # Only switch if clearly different AND long enough to be sure
+    elif word_count < 5:
         language = request.detectedLanguage
 
     prior_turns = [m for m in history[:-1] if m.role in ("customer", "agent")]
