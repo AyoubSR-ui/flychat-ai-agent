@@ -437,11 +437,10 @@ async def process_message(request) -> dict:
 
     # Language locking logic — word_count always defined first
     word_count = len(last_customer_msg.strip().split())
+    word_count = len(last_customer_msg.strip().split())
     if request.detectedLanguage:
-        # Keep locked if: short message, or same language, or detection uncertain
         if word_count <= 3 or language == request.detectedLanguage:
             language = request.detectedLanguage
-        # Only switch if clearly different AND long enough to be sure
         elif word_count < 5:
             language = request.detectedLanguage
 
