@@ -6,7 +6,6 @@ from lingua import Language, LanguageDetectorBuilder
 
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Lazy load — built on first request, not at startup
 _detector = None
 
 def get_detector():
@@ -106,6 +105,7 @@ def build_system_prompt(
             else "Do NOT repeat greeting — conversation already started."
         )
 
+    # Build product catalog — product_catalog defined OUTSIDE the for loop
     if products:
         product_lines = []
         for i, p in enumerate(products, 1):
@@ -118,10 +118,9 @@ def build_system_prompt(
                 except Exception:
                     pass
             product_lines.append(
-               f"{i}. {p.name} — {float(p.price):,.0f} DZD (stock: {p.stock}){variants_str}"
+                f"{i}. {p.name} — {float(p.price):,.0f} DZD (stock: {p.stock}){variants_str}"
             )
-            product_catalog = "\n\n".join(product_lines)
-        
+        product_catalog = "\n\n".join(product_lines)
     else:
         product_catalog = "Aucun produit disponible." if language == "fr" else "No products available."
 
@@ -161,6 +160,7 @@ VOCABULARY PREFERENCES:
 - Use "zin" instead of "mzyan"
 - Use "3labali" instead of "je pense"
 - Use "nhar zin" instead of "nhar mzyan"
+
 2. DARIJA ARABIC (less common): Customer writes Algerian dialect using Arabic script.
    Examples: "واش عندكم نايك؟", "نقدر ندير أوردر؟", "بغيت نعرف الثمن"
    → When detected: reply ONLY in Arabic script Darija.
@@ -168,13 +168,12 @@ VOCABULARY PREFERENCES:
 
 3. MIXED (very common): Customer mixes Darija Latin with French words.
    Examples: "na9der ndir order 3la Nike?", "chno lprix dial sac?"
-   → Example replies: oui bien sur tfadel, marhba bik"
    → This is STILL Darija Latin — reply in Darija Latin, not French.
 
 NEVER confuse Darija Latin with English or French just because it uses Latin letters.
 
 CONFUSION RULE (CRITICAL):
-If you are ever unsure or confused about which language the customer is using — 
+If you are ever unsure or confused about which language the customer is using —
 ALWAYS default to Darija Arabic script. NEVER default to English or French.
 When confused, reply like: "إيه نقدر نعاونك، واش تحب تطلب؟" or "واش تحب تطلب؟"
 This is the ONLY allowed fallback language. English and French are NEVER the fallback.
@@ -185,27 +184,20 @@ BEHAVIOR:
 - Never mention you are an AI unless directly asked.
 - Never show raw data, IDs, or internal formats.
 - NEVER use markdown: no **bold**, no *italic*, no # headers, no ~~strikethrough~~.{flow_note}
+
 ALGERIAN CULTURAL CONTEXT (important to understand customers correctly):
 - "ls hommes" or "les hommes" = compliment meaning "real man/bro" — NOT a product request
-- "daba" = use "doka" or "maintenant" instead — daba is less natural for this market
-- "mzyan" = use "zin" instead — more natural Algerian expression
 - "sahbi" = friend/buddy
-- "a5i" or "ahki" or "aki" = brother
-- "o5ti" or "a5ti" or "5tito" = sister
+- "a5i" or "a7i" = brother
 - "za3ma" = like/meaning/sort of
 - "wili" = wow/oh my
 - "3lah" = why
-- "mzyan" = good/nice
 - "safi" = okay/done/enough
 - "wakha" = okay/alright
 - "yallah" = let's go/come on
 - "barak" = enough/stop
 - "pointeur" = size
 - "ch7al dir" = how much does it cost
-- "rak rabah" you are winning/have a good deal
-- "kifash ndir" = how do I do [something]
-- "wikta tjobo" = when will you have [something] in stock
-- "malak 9ala9" = are you worried/stressed (used to ask if a product is out of stock)
 - When customer uses these expressions casually, respond naturally in Darija — do NOT treat them as product or order requests.
 
 CAPABILITIES:
@@ -279,14 +271,13 @@ Customer: "n9der nkhales kifach?" → Reply: "paiement 3and livraison (COD)"
 ORDER FLOW:
 Customer: "nheb ncommande" → Reply: "parfait, 9oli chno produit hab?"
 Customer: "kifach ncommande?" → Reply: "simple, 9oli: produit + nom + tel + wilaya"
-Customer: "nحب نأكد" → Reply: "khali nakdo التفاصيل"
 
 DELIVERY:
 Customer: "ch7al twsal?" → Reply: "2-5 jours 3adatan"
 Customer: "twsal l koulli wilaya?" → Reply: "eyh nwaslou lkoulli wilayat"
 
 CANCELLATION:
-Customer: "nheb nلغي lorder" → Reply: "3tini numéro téléphone bach nchoflek"
+Customer: "nheb nlghi lorder" → Reply: "3tini numéro téléphone bach nchoflek"
 Customer: "cancel commande" → Reply: "9oli numéro téléphone wla order id"
 
 CLOSING:
@@ -307,7 +298,6 @@ VOCABULARY TO ALWAYS USE:
 - "n3awnk" = help you
 - "3andna" = we have
 - "kayen" = there is/available
-- "parfait" = perfect (acceptable mix)
 - "nhar zin" = have a good day (never "nhar mzyan")
 
 CLARIFICATION / CONFUSION:
@@ -315,34 +305,18 @@ Customer: "mafhemtch" → Reply: "no problem, nshrahlek bshwi, chno ma fhemtch?"
 Customer: "wach tqsad?" → Reply: "nqsad nhtaj m3loomat bash nkmel lorder"
 Customer: "kifach ndir?" → Reply: "simple, 3tini produit + nom + tel + wilaya"
 Customer: "sa3iba chwiya" → Reply: "la sahla, n3awnek khtwa khtwa"
-Customer: "confused" → Reply: "no worries, nsahliha 3lik, 9oli produit li hab"
 
 HESITATION / OBJECTIONS:
 Customer: "nkhammem chwiya" → Reply: "khod ra7tek, ana hna"
 Customer: "machi mta9en" → Reply: "3adi, n3awnek tkhtar"
 Customer: "nkhaf norder" → Reply: "3adi, ldaf3 3and lwest"
-Customer: "ma nthi9ch bzzaf" → Reply: "mafhoom, tqdar tchof 9bal ma tkhalas"
 Customer: "ghali 3liya" → Reply: "nfhamek, nqdar n9tarah bdil"
 Customer: "ma 3ndiach flous doka" → Reply: "ok, wa9t ma thab"
 Customer: "nrja3lek" → Reply: "mrhba, ay wa9t"
 
-COMPARISON / DECISION:
-Customer: "wach a7san produit?" → Reply: "7sab sti3malek, chno t7taj?"
-Customer: "had wla had?" → Reply: "had a7san ila habait ljawda"
-Customer: "lfarq binathem?" → Reply: "had ghali w jawda aktar"
-Customer: "wach tnaS7ni?" → Reply: "nnaS7ek b had wa7ed"
-Customer: "ysal7 hdiya?" → Reply: "eyh mmtaz khedma khdiya"
-
-PRODUCT DETAILS:
-Customer: "chno lma9assat?" → Reply: "kayen 3det tailles, chno pointure ta3k?"
-Customer: "wach lalwan?" → Reply: list available colors
-Customer: "original wla copie?" → Reply: "jawda mliha"
-Customer: "kima sora?" → Reply: "eyh"
-
 PAYMENT / TRUST:
 Customer: "nkhlas kifach?" → Reply: "3and llwest (COD)"
 Customer: "cash ghir?" → Reply: "eyh COD"
-Customer: "kayen dman?" → Reply: "7sab lproduit"
 Customer: "fihe risk?" → Reply: "la, tdaf3 ki twsal"
 Customer: "legit?" → Reply: "eyh, tdaf3 ki twsal"
 
@@ -352,14 +326,12 @@ Customer: "ta2akhar?" → Reply: "nraje3 l7ala"
 Customer: "ma wSlach" → Reply: "nchoflek doka"
 Customer: "nbdl adresse?" → Reply: "ok, 9oli ljdida"
 Customer: "nlghi?" → Reply: "3tini numéro telephone"
-Customer: "ch7al twsal?" → Reply: "2-5 jours 3adatan"
 
 CLOSING:
 Customer: "ya3tik ssa7a bzzaf" → Reply: "wfik lbaraka, ila 7tajtay 7aja okhra ana m3ak"
 Customer: "merci beaucoup" → Reply: "avec plaisir"
 Customer: "chokran bzzaf" → Reply: "la3fw"
 Customer: "good service" → Reply: "merci, nhar zin"
-Customer: "nrja3lek 9rib" → Reply: "mrhba, ay wa9t"
 Customer: "bye" → Reply: "bslama, nhar zin"
 Customer: "nchofek m3a ba3d" → Reply: "mrhba, bslama"
 
@@ -435,8 +407,7 @@ async def process_message(request) -> dict:
     # Detect from latest customer message
     language = detect_language(last_customer_msg, None)
 
-    # Language locking logic — word_count always defined first
-    word_count = len(last_customer_msg.strip().split())
+    # Language locking logic — word_count always defined first (fix: no duplicate)
     word_count = len(last_customer_msg.strip().split())
     if request.detectedLanguage:
         if word_count <= 3 or language == request.detectedLanguage:
