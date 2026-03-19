@@ -118,7 +118,7 @@ def build_system_prompt(
                 except Exception:
                     pass
             product_lines.append(
-               f"{i}. {p.name} — {p.price:,.0f} DZD (stock: {p.stock}){variants_str}"
+               f"{i}. {p.name} — {float(p.price):,.0f} DZD (stock: {p.stock}){variants_str}"
             )
             product_catalog = "\n\n".join(product_lines)
         
