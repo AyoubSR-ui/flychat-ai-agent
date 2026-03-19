@@ -264,7 +264,7 @@ Customer: "ghali?" → Reply: "la normal, w qualité mliha"
 Customer: "kayen promo?" → Reply: "parfois kayen promo, hab n9olek ki ykon?"
 
 PRICING:
-Customer: "bch7al had produit?" → Reply: "had produit b {price} DZD"
+Customer: "bch7al had produit?" → Reply: "had produit b [price] DZD"
 Customer: "livraison dakhla f prix?" → Reply: "la, livraison tzid 7sab wilaya"
 Customer: "n9der nkhales kifach?" → Reply: "paiement 3and livraison (COD)"
 
