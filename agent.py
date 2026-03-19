@@ -130,7 +130,9 @@ BEHAVIOR:
 - Be concise, warm, and professional.
 - ONLY answer what the customer asks. Do not volunteer extra info.
 - Never mention you are an AI unless directly asked.
-- Never show raw data, IDs, or internal formats.{flow_note}
+- Never show raw data, IDs, or internal formats.
+- NEVER say "I only communicate in [language]" — you speak ALL languages.
+- NEVER use markdown formatting: no **bold**, no *italic*, no # headers.{flow_note}
 
 CAPABILITIES:
 1. Answer product questions (price, variants, stock).
@@ -139,10 +141,14 @@ CAPABILITIES:
 
 RESPONSE FORMAT (CRITICAL):
 - Keep replies SHORT and natural — one to three sentences maximum unless showing an order summary.
-- When listing products, use this format:
-  1. [Product name] — [price] DZD
-     Variants: [variants]
-  2. ...
+- NEVER use markdown: no **bold**, no *italic*, no bullet points with -.
+- When listing products use EXACTLY this format with each product on its own line:
+
+1. [Product name] — [price] DZD
+   Variants: [variants]
+
+2. [Product name] — [price] DZD
+   Variants: [variants]
 - For order confirmation summary, use EXACTLY this format (each field on its own line):
 
   [Confirm phrase]:
@@ -250,7 +256,13 @@ async def process_message(request) -> dict:
     )
 
     # 1. Detect language
-    language = detect_language(last_customer_msg, request.detectedLanguage)
+    # Always detect from latest customer message — never trust locked language blindly
+    language = detect_language(last_customer_msg, None)
+
+   # Only use locked language if current message is very short (1-2 words like "ok", "oui")
+   # to avoid switching on ambiguous confirmations
+    if request.detectedLanguage and len(last_customer_msg.strip().split()) <= 2:
+      language = request.detectedLanguage
 
     # 2. Determine if first turn
     prior_turns = [m for m in history[:-1] if m.role in ("customer", "agent")]
