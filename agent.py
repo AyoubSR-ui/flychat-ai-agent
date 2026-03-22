@@ -4,6 +4,46 @@ import re
 from openai import AsyncOpenAI
 from lingua import Language, LanguageDetectorBuilder
 
+LANGUAGE_CHOICE_PROMPT = "1️⃣ 🇩🇿 Darija\n2️⃣ دارجة\n3️⃣ 🇫🇷 Français\n4️⃣ 🇬🇧 English"
+
+LANGUAGE_CHOICE_TRIGGER = "kifach thibbs ntkallam m3ak? / بأي لغة تحب نتكلمو؟\n\n" + LANGUAGE_CHOICE_PROMPT
+
+def detect_language_choice(text: str) -> str | None:
+    """Detect if customer is choosing a language by number or keyword."""
+    t = text.strip().lower()
+    if t in ("1", "darija", "درجة", "darja", "1️⃣"):
+        return "ar-latin"
+    if t in ("2", "دارجة", "darija arabic", "2️⃣"):
+        return "ar"
+    if t in ("3", "français", "francais", "fr", "french", "3️⃣"):
+        return "fr"
+    if t in ("4", "english", "en", "inglizi", "4️⃣"):
+        return "en"
+    return None
+
+def is_language_uncertain(text: str) -> bool:
+    """Returns True if message is too short/ambiguous to detect language."""
+    text_lower = text.lower().strip()
+    words = text_lower.split()
+    
+    # Single word — uncertain
+    if len(words) <= 1:
+        return True
+    
+    # 2 words but no clear Darija signal
+    darija_pattern = r"\b(wach|wesh|3andi|3andek|3andkom|kifash|kifach|labas|bghit|na9der|9der|kayn|rani|chno|9oli|nqdar|n3awnk|daba|safi|wakha|yallah|bzaf|sahbi|a5i|a7i|mzyan|zin)\b"
+    if re.search(darija_pattern, text_lower):
+        return False
+    if re.search(r'[39782]', text):
+        return False
+    arabic_chars = len(re.findall(r'[\u0600-\u06FF]', text))
+    if arabic_chars > 2:
+        return False
+    if len(words) <= 2:
+        return True
+    
+    return False
+
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 _detector = None
@@ -404,19 +444,34 @@ async def process_message(request) -> dict:
         (m.content for m in reversed(history) if m.role == "customer"), ""
     )
 
-    # Detect from latest customer message
-    language = detect_language(last_customer_msg, None)
+    # Check if customer is choosing a language
+    chosen_language = detect_language_choice(last_customer_msg)
+    if chosen_language:
+        language = chosen_language
+    else:
+        language = detect_language(last_customer_msg, None)
 
-    # Language locking logic — word_count always defined first (fix: no duplicate)
-    word_count = len(last_customer_msg.strip().split())
-    if request.detectedLanguage:
-        if word_count <= 3 or language == request.detectedLanguage:
-            language = request.detectedLanguage
-        elif word_count < 5:
-            language = request.detectedLanguage
+        word_count = len(last_customer_msg.strip().split())
+        if request.detectedLanguage and not chosen_language:
+            if word_count <= 3 or language == request.detectedLanguage:
+                language = request.detectedLanguage
+            elif word_count < 5:
+                language = request.detectedLanguage
 
-    prior_turns = [m for m in history[:-1] if m.role in ("customer", "agent")]
+    prior_turns = [m for m in history[:-1] if m.role in ("customer", "agent", "bot")]
     is_first_turn = len(prior_turns) == 0
+
+    # If first turn and language uncertain → ask customer to choose
+    if is_first_turn and is_language_uncertain(last_customer_msg) and not chosen_language:
+        return {
+            "reply": LANGUAGE_CHOICE_TRIGGER,
+            "detectedLanguage": "ar-latin",
+            "action": {"type": "none"},
+        }
+
+    # If language was just chosen → confirm and continue
+    if chosen_language and len(prior_turns) <= 2:
+        language = chosen_language
 
     system_prompt = build_system_prompt(
         store_name=request.storeName,
@@ -424,7 +479,7 @@ async def process_message(request) -> dict:
         products=request.products,
         recent_orders=request.recentOrders,
         language=language,
-        is_first_turn=is_first_turn,
+        is_first_turn=is_first_turn and not chosen_language,
         ai_flow_state=request.aiFlowState,
     )
 
