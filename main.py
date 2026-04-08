@@ -28,6 +28,8 @@ class Product(BaseModel):
     price: float
     stock: int
     variants: Optional[list] = None
+    imageUrl: Optional[str] = None
+    description: Optional[str] = None
 
 
 class RecentOrder(BaseModel):
