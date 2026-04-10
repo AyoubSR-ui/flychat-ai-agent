@@ -136,11 +136,27 @@ def build_system_prompt(
                 try:
                     v = p.variants if isinstance(p.variants, list) else json.loads(p.variants)
                     if v:
-                        variants_str = f"\n   Variants: {', '.join(str(x) for x in v)}"
+                        # Clean variant display: "Color: Bleu, Size: L" → "Colors: Bleu | Sizes: L, XL, XXL"
+                        colors = [str(x).split(":")[-1].strip() for x in v if ":" in str(x) and not str(x).lower().startswith("size")]
+                        sizes = [str(x).split(":")[-1].strip() for x in v if str(x).lower().startswith("size:")]
+                        other = [str(x) for x in v if ":" not in str(x)]
+                        parts = []
+                        if colors:
+                            parts.append("Colors: " + ", ".join(colors))
+                        if sizes:
+                            parts.append("Sizes: " + ", ".join(sizes))
+                        if other:
+                            parts.append(", ".join(other))
+                        if parts:
+                            variants_str = "\n   Variants: " + " | ".join(parts)
                 except Exception:
                     pass
-            image_str = f"\n   Image: {getattr(p, 'imageUrl', None)}" if getattr(p, 'imageUrl', None) else ""
-            desc_str = f"\n   Description: {getattr(p, 'description', None)}" if getattr(p, 'description', None) else ""
+            image_str = ""
+            if getattr(p, 'imageUrl', None):
+                image_str = "\n   Image: " + str(p.imageUrl)
+            desc_str = ""
+            if getattr(p, 'description', None):
+                desc_str = "\n   Description: " + str(p.description)
             product_lines.append(
                 f"{i}. {p.name} — {float(p.price):,.0f} DZD (stock: {p.stock}){variants_str}{desc_str}{image_str}"
             )
@@ -348,10 +364,13 @@ Schema:
 }
 
 Rules:
-- canAutoCreate = true ONLY when ALL 7 fields are present (customerName, customerPhone, wilaya, baladiya, address, shippingOption, items) AND customer has confirmed (yes/oui/wah/wakha/ايه/نعم/صح)
-- shippingOption: "home_delivery" if customer chose home delivery (الى البيت/livraison/توصيل), "pickup" if chose pickup (من الفرع/retrait)
+- canAutoCreate = true ONLY when these fields are present: customerName, customerPhone, wilaya, items AND customer has confirmed (yes/oui/wah/wakha/ايه/نعم/correct/c'est correct/bon/cbon)
+- baladiya and address are optional — do not block canAutoCreate if missing
+- shippingOption: default to "home_delivery" if customer says "à domicile", "livraison", "chez moi", "dar", "البيت". Use "pickup" only if explicitly stated
+- Extract product name AND variant (color + size) from conversation context
 - cancelPhone: extract phone number when intent is cancel_order
-- For product_inquiry and other intents, orderData and cancelPhone can be null"""
+- For product_inquiry and other intents, orderData and cancelPhone can be null
+- "cbon", "c bon", "correct", "c'est bon", "parfait" all count as confirmation"""
 
 
 async def extract_order(history: list, products: list) -> dict:
@@ -398,7 +417,11 @@ async def process_message(request) -> dict:
         language = detect_language(last_customer_msg, None)
         word_count = len(last_customer_msg.strip().split())
         if request.detectedLanguage and not chosen_language:
+            # Lock to detected language more aggressively — prevent flip-flopping
             if word_count <= 5 or language == request.detectedLanguage:
+                language = request.detectedLanguage
+            elif request.detectedLanguage == "fr" and language != "ar":
+                # If conversation is in French, keep French unless clear Arabic signal
                 language = request.detectedLanguage
             elif request.detectedLanguage == "fr" and language != "ar":
                 language = request.detectedLanguage
