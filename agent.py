@@ -398,22 +398,20 @@ async def process_message(request) -> dict:
         language = detect_language(last_customer_msg, None)
         word_count = len(last_customer_msg.strip().split())
         if request.detectedLanguage and not chosen_language:
-            if word_count <= 3 or language == request.detectedLanguage:
+            if word_count <= 5 or language == request.detectedLanguage:
                 language = request.detectedLanguage
-            elif word_count < 5:
+            elif request.detectedLanguage == "fr" and language != "ar":
                 language = request.detectedLanguage
 
     prior_turns = [m for m in history[:-1] if m.role in ("customer", "agent", "bot")]
     is_first_turn = len(prior_turns) == 0
 
-    # If first turn and language uncertain → default to Darija Arabic (not language choice prompt)
     if is_first_turn and is_language_uncertain(last_customer_msg) and not chosen_language:
-        language = "ar"  # Default to Darija Arabic
+        language = "ar"
 
     if chosen_language and len(prior_turns) <= 2:
         language = chosen_language
 
-    # Get shipping options from request if available
     shipping_options = getattr(request, 'shippingOptions', None)
 
     system_prompt = build_system_prompt(
@@ -448,14 +446,32 @@ async def process_message(request) -> dict:
 
     if extraction.get("canAutoCreate") and extraction.get("orderData"):
         od = extraction["orderData"]
+
+        # ── Fix item prices from product catalog ──────────────────────────────
+        fixed_items = []
+        for item in (od.get("items") or []):
+            item_price = item.get("price")
+            if not item_price:
+                item_name = (item.get("productName") or "").lower()
+                for p in request.products:
+                    if item_name in p.name.lower() or p.name.lower() in item_name:
+                        item_price = float(p.price)
+                        break
+            fixed_items.append({
+                "productName": item.get("productName"),
+                "price": float(item_price) if item_price else 0.0,
+                "quantity": item.get("quantity") or 1,
+                "variant": item.get("variant"),
+            })
+
         action = {
             "type": "create_order",
             "customerName": od.get("customerName"),
             "customerPhone": od.get("customerPhone"),
             "wilaya": od.get("wilaya"),
-            "address": f"{od.get('baladiya', '')} - {od.get('address', '')}".strip(" -"),
-            "shippingOption": od.get("shippingOption"),
-            "items": od.get("items", []),
+            "address": f"{od.get('baladiya', '') or ''} - {od.get('address', '') or ''}".strip(" -") or None,
+            "shippingOption": od.get("shippingOption") or "home_delivery",
+            "items": fixed_items,
         }
     elif extraction.get("intent") == "cancel_order" and extraction.get("cancelPhone"):
         action = {

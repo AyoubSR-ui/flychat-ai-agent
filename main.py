@@ -55,8 +55,8 @@ class ChatRequest(BaseModel):
 class OrderItem(BaseModel):
     productId: Optional[str] = None
     productName: str
-    price: float
-    quantity: int
+    price: float = 0.0
+    quantity: int = 1
     variant: Optional[str] = None
 
 
