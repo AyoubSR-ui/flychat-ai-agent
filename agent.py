@@ -399,19 +399,51 @@ def build_product_catalog(products: list, language: str) -> str:
 
 def build_shipping_section(shipping_options: dict | None) -> str:
     if not shipping_options:
-        return "Ask customer — home delivery or pickup from branch."
+        return "Ask customer — home delivery (الى البيت) or pickup (من الفرع)."
+
     home_enabled = shipping_options.get("homeDeliveryEnabled", True)
     pickup_enabled = shipping_options.get("pickupEnabled", False)
     home_label = shipping_options.get("homeLabel", "الى البيت")
     pickup_label = shipping_options.get("pickupLabel", "من الفرع")
     wilaya_prices = shipping_options.get("wilayaPrices", {})
-    price_json = json.dumps(wilaya_prices, ensure_ascii=False)
+
+    # Build readable price table
+    price_lines = []
+    for wilaya, prices in wilaya_prices.items():
+        if isinstance(prices, dict):
+            home_price = prices.get("home", 0)
+            pickup_price = prices.get("pickup", 0)
+            if home_enabled and pickup_enabled:
+                price_lines.append(f"  {wilaya}: {home_label}={home_price} DZD | {pickup_label}={pickup_price} DZD")
+            elif home_enabled:
+                price_lines.append(f"  {wilaya}: {home_price} DZD")
+            elif pickup_enabled:
+                price_lines.append(f"  {wilaya}: {pickup_price} DZD")
+
+    price_table = "\n".join(price_lines) if price_lines else "Prix standard selon wilaya."
+
     if home_enabled and pickup_enabled:
-        return ("Options: " + home_label + " (home) or " + pickup_label + " (pickup)\nPrice by wilaya:\n" + price_json)
+        return (
+            "SHIPPING OPTIONS — 2 choices available:\n"
+            "1. " + home_label + " (Home Delivery)\n"
+            "2. " + pickup_label + " (Pickup from Branch)\n"
+            "Ask customer which they prefer BEFORE showing order summary.\n\n"
+            "PRICES PER WILAYA (home | pickup):\n" + price_table + "\n\n"
+            "USAGE: When customer mentions wilaya (e.g. Ouargla), "
+            "look up price above and include in order summary."
+        )
     elif home_enabled:
-        return "Home Delivery only. Price by wilaya:\n" + price_json
+        return (
+            "SHIPPING: " + home_label + " only.\n\n"
+            "PRICES PER WILAYA:\n" + price_table + "\n\n"
+            "USAGE: When customer mentions wilaya, look up price above."
+        )
     elif pickup_enabled:
-        return "Pickup from Branch only. Price by wilaya:\n" + price_json
+        return (
+            "SHIPPING: " + pickup_label + " only.\n\n"
+            "PRICES PER WILAYA:\n" + price_table + "\n\n"
+            "USAGE: When customer mentions wilaya, look up price above."
+        )
     return "Ask customer for delivery preference."
 
 # ═══════════════════════════════════════════════════════════════════════════════
