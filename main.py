@@ -77,8 +77,11 @@ class ChatResponse(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
-
+    return {
+        "status": "ok",
+        "version": "selective-context-v3-retry",
+        "updated": "2026-04-11"
+    }
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(
