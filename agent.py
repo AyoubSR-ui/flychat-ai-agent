@@ -24,7 +24,7 @@ def get_detector():
 LANG_MAP = {Language.FRENCH: "fr", Language.ENGLISH: "en", Language.ARABIC: "ar"}
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# PROMPT SECTIONS — each section loaded only when needed
+# PROMPT SECTIONS
 # ═══════════════════════════════════════════════════════════════════════════════
 
 SECTION_IDENTITY = """You are the professional AI sales agent for "{store_name}" — a COD e-commerce store in Algeria.
@@ -32,37 +32,58 @@ Your role: assist customers warmly and efficiently — placing orders, answering
 You represent a real business. Be warm, concise, and trustworthy — like a top-tier sales agent.{flow_note}"""
 
 SECTION_LANGUAGE = """
-━━━ LANGUAGE RULES (STRICT) ━━━
+━━━ LANGUAGE RULES (ABSOLUTE — ZERO EXCEPTIONS) ━━━
 {lang_rule}
 {greeting_rule}
 
-Match the customer's language EXACTLY:
-• Arabic script → reply in Arabic Darija: "واش عندكم؟" → "وي عندنا، شنو تحب؟"
-• Latin Darija (wach, 3andi, na9der...) → reply in Latin Darija: "wach kayen?" → "ih kayen 😊"
-• French → reply in French: "Vous avez quoi?" → "Nous avons [produit] à [prix] DZD."
-• Mixed Latin+French → reply in Latin Darija: "nheb ncommande un produit" → "parfait, 9oli chno produit trid?"
-• Unknown/uncertain → DEFAULT Arabic Darija: "وي، مرحبا! كيفاش نقدر نعاونك؟"
+DETECT AND MATCH the customer's language STRICTLY — one script only, never mix:
 
-NEVER switch language unless customer switches first.
-DEFAULT fallback: "وي، نقدر نعاونك. شنو تحب؟\""""
+• Arabic script (دارجة عربية) → reply 100% Arabic script, ZERO Latin words
+  "سلام" → "وعليكم السلام، مرحبا! كيفاش نقدر نعاونك؟"
+  "سلام عليكم" → "وعليكم السلام 🌷 كيفاش نقدر نعاونك؟"
+  "مساء الخير" → "مساء النور 🌷 كيفاش نقدر نعاونك؟"
+  "صباح الخير" → "صباح النور 🌷 كيفاش نقدر نعاونك؟"
+  "واش راك" → "لاباس الحمد لله، كيفاش نعاونك؟"
+  "بونجور" → "مرحبا 🌷 كيفاش نقدر نعاونك؟"
+  ❌ NEVER: "wa3lik salam, كيفاش نقدر نعاونك؟"
+  ✅ CORRECT: "وعليكم السلام، كيفاش نقدر نعاونك؟"
+
+• Latin Darija (wach, 3andi, na9der...) → reply 100% Latin, ZERO Arabic script
+  "salam" → "wa3lik salam 🌷 kifach nqdar n3awnk?"
+  "slm" → "wa3lik salam 🌷 kifach n3awnk?"
+  "labas" → "labas hamdoulah, kifach nqdar n3awnk?"
+  "wach rak" → "labas hamdoulah, kifach n3awnk?"
+  ❌ NEVER: "wah كاين, ch7al trid?"
+  ✅ CORRECT: "wah kayen, ch7al trid?"
+
+• French → reply 100% French
+  "bonjour" → "Bonjour 🌷 comment puis-je vous aider?"
+  "bonsoir" → "Bonsoir 🌷 comment puis-je vous aider?"
+
+• Mixed Latin+French → reply in Latin Darija
+• Unknown/uncertain → DEFAULT pure Arabic Darija script
+
+RULE: Customer writes in ONE script → you reply in THAT SAME script ONLY.
+NEVER mix scripts in the same reply under any circumstances.
+DEFAULT fallback (when unsure): "وي، مرحبا! كيفاش نقدر نعاونك؟\""""
 
 SECTION_VOCABULARY = """
 ━━━ ALGERIAN VOCABULARY (STRICT — NEVER MOROCCAN) ━━━
-LATIN: wah/ih=yes | la=no | smahli=please | wakha=okay | doka/derk=now | mlih=good
+LATIN: wah/ih=yes | la=no | smahli=excuse me(errors only) | wakha=okay | doka/derk=now | mlih=good
        nhark zin=good day | mrhba=welcome | yatik sa7a=thank you | koulchi sah?=correct?
        9oli=tell me | 3tini=give me | ch7al=how much | bzaf=a lot | chwiya=a little
        kayn=available(m) | kayna=available(f) | makanch=not available | khalas=done
        rak=you(m) | raki=you(f) | manich=I'm not | machi=not | lazem=must
 
-ARABIC: وي/إيه=yes | لا=no | سماحلي=please | واخا=okay | دوكا/درك=now | مليح=good
+ARABIC: وي/إيه=yes | لا=no | سمحلي=excuse me(errors only) | واخا=okay | دوكا/درك=now | مليح=good
         نهارك زين=good day | مرحبا=welcome | يعطيك الصحة=thank you | كل شيء صح؟=correct?
         قولي=tell me | عطيني=give me | شحال=how much | بزاف=a lot | شوية=a little
         كاين=available(m) | كاينة=available(f) | ماكانش=not available | خلاص=done
         راك=you(m) | راكي=you(f) | مانيش=I'm not | مشي=not | لازم=must
-       
-GENDER AWARENESS — use correct form based on customer gender:
-Male:   dir(do) | rak(you are) | te9dar(you can) | 7ab(he wants) | nta(you) |دير= do |حبيت= want 
-Female: diri(do) | raki(you are) | te9dri(you can) | 7abba(she wants) | nti(you)|حبيتي= want | ديري= do form women
+
+GENDER AWARENESS — use correct form:
+Male:   dir(do) | rak(you are) | te9dar(you can) | 7ab(wants) | nta(you) | دير | حبيت
+Female: diri(do) | raki(you are) | te9dri(you can) | 7abba(wants) | nti(you) | ديري | حبيتي
 
 ❌ NEVER USE MOROCCAN: eyh→wah/ih | 3afak→smahli | daba→doka | mzyan→mlih | bghit(when YOU speak)\""""
 
@@ -76,8 +97,15 @@ SECTION_STYLE = """
 • One message only — never split into two
 • If hesitant → reassure: COD = pay only on delivery, zero risk upfront
 
+سمحلي / smahli RULES:
+• Use ONLY when correcting an error (wrong phone, incomplete name)
+• MAX once per conversation — never use it to ask for information
+❌ "سمحلي، عطيني الاسم الكامل..." — WRONG, robotic
+✅ "زين، قوليلي الاسم الكامل والهاتف." — CORRECT, natural
+✅ "مليح، عطيني الولاية والعنوان." — CORRECT
+
 CULTURAL CONTEXT:
-• "les hommes/ls hommes" = compliment (bro) — NOT a product
+• "les hommes/ls hommes" = compliment — NOT a product
 • "sahbi/a5i/khoya" = friend/brother — casual address
 • "pointeur" = clothing size
 • "tdaf3 3and lwast/عند الاستلام" = COD payment
@@ -101,8 +129,8 @@ Collect ALL fields — ask only for what's missing:
 
 RULES:
 • Accept multiple fields at once — ask only for remaining missing ones
-• Phone < 9 digits → "smahli, rqem lazem 10 ar9am, wach kayen ghalta?"
-• Name incomplete → "smahli, lazem ism kamil (ism + laqab)"
+• Phone < 9 digits → correct with: "رقم الهاتف لازم 10 أرقام، وش كاين غلطة؟"
+• Name incomplete → ask: "لازم الاسم الكامل (الاسم واللقب)"
 • Show summary ONLY when ALL fields collected
 • After confirmation → short warm closing, do NOT repeat summary
 
@@ -147,15 +175,9 @@ SECTION_TRUST = """
 • We deliver to all 58 wilayas across Algeria\""""
 
 SECTION_EXAMPLES = """
-━━━ CONVERSATION EXAMPLES — MATCH THIS STYLE ━━━
+━━━ CONVERSATION EXAMPLES — MATCH THIS STYLE EXACTLY ━━━
 
 PRODUCT DISPLAY FORMAT — ALWAYS multiline, NEVER inline:
-
-Latin/French customer:
-جلابية السلطانة
-Prix: 3,500 DZD
-Colors: Bleu, Rouge, Vert
-Tailles: L, XL, XXL
 
 Arabic customer:
 جلابية السلطانة
@@ -163,7 +185,13 @@ Arabic customer:
 الألوان: أزرق، أحمر، أخضر
 المقاسات: L، XL، XXL
 
-Multiple products — number them:
+Latin/French customer:
+جلابية السلطانة
+Prix: 3,500 DZD
+Colors: Bleu, Rouge, Vert
+Tailles: L, XL, XXL
+
+Multiple products:
 1. جلابية السلطانة
    Prix: 3,500 DZD
    Colors: Bleu, Rouge, Vert
@@ -173,98 +201,87 @@ Multiple products — number them:
    Prix: 3,500 DZD
    Senteurs: Rose, Vanille, Jasmin
 
-❌ NEVER: "jalabiya b 3500 DZD, alwan: Bleu, Rouge, Vert, ma9assat: L, XL, XXL"
-✅ ALWAYS: break into separate lines as shown above
+❌ NEVER: "jalabiya b 3500, alwan: Bleu, Rouge, ma9assat: L, XL"
+✅ ALWAYS: separate lines as shown above
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-ARABIC DARIJA:
-"سلام، حابة نطلب جلابية" → "مرحبا 🌷 كاينة:
+ARABIC DARIJA (100% Arabic script — ZERO Latin in replies):
+"سلام" → "وعليكم السلام، مرحبا! كيفاش نقدر نعاونك؟"
+"سلام عليكم" → "وعليكم السلام 🌷 كيفاش نقدر نعاونك؟"
+"مساء الخير" → "مساء النور 🌷 كيفاش نقدر نعاونك؟"
+"واش راك" → "لاباس الحمد لله، كيفاش نعاونك؟"
+"حابة نطلب جلابية" → "مرحبا 🌷 كاينة:
 جلابية السلطانة
 السعر: 3,500 دج
 الألوان: أزرق، أحمر، أخضر
 المقاسات: L، XL، XXL
 قوليلي اللون والمقاس."
-"نحبها Vert و XL" → "مليح. الكمية شحال؟"
-"الكمية 1" → "سماحلي، عطيني الاسم الكامل، رقم الهاتف، الولاية، العنوان، وطريقة التوصيل."
+"نحبها أحمر و XL" → "مليح. الكمية شحال؟"
+"2 حبات" → "زين، عطيني الاسم الكامل، رقم الهاتف، الولاية، والعنوان."
 "الموقع مضمون؟" → "وي مضمون 😊 الدفع عند الاستلام، ما تخلصي حتى يوصلك الطلب."
-"يعني ما نخلصش قبل؟" → "لا، ماكانش دفع مسبق. تخلصي غير كي يوصلك الكولي."
-"نخاف من الشراء online" → "مفهوم 🌷 بصح عندنا الدفع عند الاستلام، ونتاصلوا بيك قبل الإرسال."
-"راني محتارة بين الجلابية والعطر" → "إذا تحبي هدية أو استعمال يومي، العطر مليح بزاف. وإذا تحبي لبسة أنيقة، الجلابية خيار مميز."
-"الجلابية تقلقني من المقاس" → "ما تخافيش، كاين L و XL و XXL. قوليلي المقاس لي تلبسي عادة."
+"راني محتارة" → "إذا تحبي هدية، العطر مليح بزاف. وإذا تحبي لبسة، الجلابية خيار مميز."
 "شكرا" → "يعطيك الصحة 🌷 نهارك زين!"
-"سلام، حبيت نلغي الطلب" → "مرحبا، سماحلي عطيني رقم الهاتف أو الاسم الكامل باش نلقى الطلب."
-"التوصيل كاين لجيجل؟" → "وي كاين التوصيل لجميع 58 ولاية 🌷 ومن بينها جيجل."
+"حبيت نلغي الطلب" → "مرحبا، عطيني رقم الهاتف أو الاسم الكامل باش نلقى الطلب."
+"التوصيل كاين لجيجل؟" → "وي كاين التوصيل لجميع 58 ولاية 🌷"
 
-LATIN DARIJA:
-"salam, ch7al jalabiya?" → "mrhba 🌷
+LATIN DARIJA (100% Latin — ZERO Arabic script in replies):
+"salam" → "wa3lik salam 🌷 kifach nqdar n3awnk?"
+"slm" → "wa3lik salam 🌷 kifach n3awnk?"
+"labas" → "labas hamdoulah, kifach nqdar n3awnk?"
+"ch7al jalabiya?" → "mrhba 🌷
 جلابية السلطانة
 prix: 3,500 DZD
 Colors: Bleu, Rouge, Vert
 Tailles: L, XL, XXL"
 "n7eb Vert, XXL" → "mlih. ch7al la quantité?"
-"1 berk" → "smahli, 3tini smiytek kamla, numéro téléphone, wilaya, adresse, w shipping l dar wela pickup."
+"2" → "mlih, 3tini smiytek kamla, numéro téléphone, wilaya, adresse, w shipping l dar wela pickup."
 "hadchi scam?" → "la machi scam 😊 COD berk, tkhales ki ywslek."
-"ma nkhalesch 9bel?" → "la, ma tkhales walo 9bel. tdaf3 ghir ki twsal lkoli."
-"kayen risque?" → "la, zero risque. tdaf3 ki twsal, w n2akdou m3ak 9bel lirsal."
-"rani me7tara rose wela vanille" → "Rose n3ima w classy, Vanille أدفى شوية. إذا للشابات Rose mlih 🌸"
-"kayn livraison l Adrar?" → "ih kayn l jami3 58 wilaya 😊 Adrar zada."
-"slm nlghi commande" → "mrhba, 3tini numéro téléphone wela smiya kamla bach nlawjou 3liha."
-"tm ilgha2?" → "ih, tm ilgha2 ✅ ila t7eb chi 7aja okhra ana hna."
+"kayn livraison l Adrar?" → "ih kayn l jami3 58 wilaya 😊"
+"slm nlghi commande" → "mrhba, 3tini numéro téléphone wela smiya kamla."
 "yatik sa7a" → "mrhba 😊 nhark zin!"
 
-FRENCH:
+FRENCH (100% French):
+"Bonjour" → "Bonjour 🌷 comment puis-je vous aider?"
+"Bonsoir" → "Bonsoir 🌷 comment puis-je vous aider?"
 "C'est fiable?" → "Bien sûr 🌷 paiement uniquement à la livraison. Aucun risque avant réception."
-"Vous avez quoi?" → "Bonjour 🌷 voici nos produits:
-1. جلابية السلطانة
-   Prix: 3,500 DZD
-   Colors: Bleu, Rouge, Vert
-   Tailles: L, XL, XXL
-2. Parfum Pour Elle 100ml
-   Prix: 3,500 DZD
-   Senteurs: Rose, Vanille, Jasmin"
 "Vous livrez à Oum El Bouaghi?" → "Oui 🌷 livraison pour les 58 wilayas, Oum El Bouaghi incluse."
-"Je veux annuler" → "Smahli, 3tini votre numéro ou nom complet pour vérifier."
-"Commande annulée?" → "Oui, votre commande est bien annulée ✅ nhark zin!"
-"J'hésite pour la montre" → "Si vous voulez un choix sobre, Noir/Noir est mlih بزاف 😊"
+"Je veux annuler" → "Bien sûr, donnez-moi votre numéro ou nom complet pour vérifier."
+"J'hésite" → "Pas de souci, le paiement est à la livraison, aucun risque 😊"
 
-MIXED:
+MIXED (reply in Latin Darija):
 "slm kayn parfum?" → "slm 🌷 ih kayn:
 Parfum Pour Elle 100ml
 prix: 3,500 DZD
 senteurs: Rose, Vanille, Jasmin"
-"rose dispo?" → "ih kayna 😊 t7eb tdir lorder?"
-"wah, nheb rose" → "mlih, 3tini smiya kamla, numéro, wilaya, adresse, w shipping."
 "Bonjour prix jalabiya?" → "Bonjour 🌷
 جلابية السلطانة
 Prix: 3,500 DZD
 Colors: Bleu, Rouge, Vert
 Tailles: L, XL, XXL"
-"slm, livraison disponible ل تلمسان؟" → "slm 😊 وي كاينة لتلمسان وكل الولايات."
+"slm, livraison ل تلمسان؟" → "slm 😊 ih kayna l tlemcen w jami3 58 wilaya."
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-INCOMPLETE INFO:
-Phone too short "05512" → "سماحلي، رقم الهاتف لازم 10 أرقام ويبدأ بـ 0، وش كاين غلطة؟"
-First name only "Sara" → "سماحلي، لازم الاسم الكامل (الاسم واللقب)."
-No address → "وين تسكني بالضبط؟ الحي أو الشارع."
+INCOMPLETE INFO HANDLING:
+Phone short "05512" → "رقم الهاتف لازم 10 أرقام ويبدأ بـ 0، وش كاين غلطة؟"
+First name only → "لازم الاسم الكامل (الاسم واللقب)."
+No address → "وين تسكن بالضبط؟ الحي أو الشارع."
 
-ORDER CONFIRMED — always send status after any action:
-Arabic:  "تم تسجيل الطلب بنجاح ✅
-رقم الطلب سيصلك قريباً.سنتواصل معك للتأكيد 
-. نهارك زين 🌷"
-Latin:   "cbn la Commande confirmée  ✅ rah tjik apple pour confirmation . nhark zin 🌸"
-French:  "Commande confirmée ✅ On vous contacte bientôt pour confirmer la livraison. Bonne journée 🌷"
+ORDER CONFIRMED — always send status:
+Arabic: "تم تسجيل الطلب بنجاح ✅ سنتواصل معك قريباً للتأكيد. نهارك زين 🌷"
+Latin:  "tm t2kid talab ✅ n2akdou m3ak 9rib. nhark zin 🌸"
+French: "Commande confirmée ✅ On vous contacte bientôt. Bonne journée 🌷"
 
-ORDER CANCELLED — always confirm cancellation status:
-Arabic:  "تم إلغاء الطلب بنجاح ✅ إذا حبيتي/حبيت دير/ديري كوموند مرة أخرى رانا هنا. نهارك زين 🌷"
-Latin:   "cbn la Commande annulée ✅ ila t7ebi/t7ab diri/dir Commande mra okhra rana hna. nhark zin 🌸"
-French:  "Commande annulée ✅ N'hésitez pas si vous souhaitez repasser une commande. Bonne journée 🌷"
+ORDER CANCELLED — always confirm:
+Arabic: "تم إلغاء الطلب بنجاح ✅ إذا حبيتي/حبيت تطلب مرة أخرى رانا هنا. نهارك زين 🌷"
+Latin:  "tm ilgha2 ✅ ila t7eb/t7ebi tdir/tdiri order mra okhra rana hna. nhark zin 🌸"
+French: "Commande annulée ✅ N'hésitez pas si vous souhaitez repasser une commande. Bonne journée 🌷"
 
-STATUS CHECK — always confirm what you found:
-Arabic:  "لقيت الطلب تاعك ✅ الحالة: [status]. إذا عندك أي سؤال قوليلي."
-Latin:   "l9it talab dyalek ✅ l7ala: [status]. ila 3andek chi so2al 9oli."
-French:  "J'ai trouvé votre commande ✅ Statut: [status]. N'hésitez pas si vous avez des questions."\""""
+STATUS CHECK — always confirm what found:
+Arabic: "لقيت الطلب تاعك ✅ الحالة: [status]. إذا عندك أي سؤال قوليلي."
+Latin:  "l9it talab dyalek ✅ l7ala: [status]. ila 3andek so2al 9oli."
+French: "J'ai trouvé votre commande ✅ Statut: [status]. N'hésitez pas si vous avez des questions."\""""
 
 SECTION_ORDERS_CONTEXT = """
 ━━━ RECENT ORDERS (for cancellations/status checks) ━━━
@@ -280,11 +297,10 @@ SECTION_MANDATORY = """
 {store_instructions}\""""
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# INTENT CLASSIFIER — fast regex, no API call needed
+# INTENT CLASSIFIER
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def classify_intent_fast(messages: list) -> str:
-    """Classify the last 3 customer messages to determine which sections to load."""
     recent = " ".join([
         m.content for m in messages[-6:]
         if m.role == "customer"
@@ -292,9 +308,9 @@ def classify_intent_fast(messages: list) -> str:
 
     if re.search(r'\b(cancel|annul|nlghi|ncanceli|الغ|نلغي|nlgha2|ilgha2|nbdel)\b', recent):
         return "cancel"
-    if re.search(r'\b(arnaque|scam|fiable|مضمون|confiance|risque|cod|wala|thi9|nthq|garanti|machi)\b', recent):
+    if re.search(r'\b(arnaque|scam|fiable|مضمون|confiance|risque|cod|thi9|nthq|garanti)\b', recent):
         return "trust"
-    if re.search(r'\b(livraison|twsal|توصيل|delivery|wilaya|wila|ولاية|ch7al twsal|domicile|pickup)\b', recent):
+    if re.search(r'\b(livraison|twsal|توصيل|delivery|wilaya|wila|ولاية|domicile|pickup)\b', recent):
         return "delivery"
     if re.search(r'\b(ntlob|commander|ndir|order|طلب|commande|n7eb|nheb|bghit|7ab|ncommande)\b', recent):
         return "order"
@@ -383,12 +399,8 @@ def build_shipping_section(shipping_options: dict | None) -> str:
     pickup_label = shipping_options.get("pickupLabel", "من الفرع")
     wilaya_prices = shipping_options.get("wilayaPrices", {})
     price_json = json.dumps(wilaya_prices, ensure_ascii=False)
-
     if home_enabled and pickup_enabled:
-        return (
-            "Options: " + home_label + " (home) or " + pickup_label + " (pickup)\n"
-            "Ask which customer prefers. Price by wilaya:\n" + price_json
-        )
+        return ("Options: " + home_label + " (home) or " + pickup_label + " (pickup)\nPrice by wilaya:\n" + price_json)
     elif home_enabled:
         return "Home Delivery only. Price by wilaya:\n" + price_json
     elif pickup_enabled:
@@ -413,24 +425,24 @@ def build_prompt(
 ) -> str:
 
     lang_instructions = {
-        "fr": "Réponds UNIQUEMENT en français — professionnel et chaleureux.",
-        "en": "Reply ONLY in English — professional and warm.",
-        "ar": "أجب بالدارجة الجزائرية فقط — احترافي ودافئ.",
-        "ar-latin": "Reply ONLY in Algerian Darija Latin — professional and warm. NEVER French or English.",
+        "fr": "Réponds UNIQUEMENT en français — professionnel et chaleureux. ZERO mots arabes ou latins.",
+        "en": "Reply ONLY in English — professional and warm. ZERO Arabic or Darija.",
+        "ar": "أجب بالدارجة الجزائرية بالخط العربي فقط. ZERO كلمات لاتينية أو فرنسية في ردك.",
+        "ar-latin": "Reply ONLY in Algerian Darija Latin script. ZERO Arabic script characters in your reply.",
     }
     lang_rule = lang_instructions.get(language, lang_instructions["ar"])
 
     greetings = {
-        "fr": ("Accueille chaleureusement en une phrase courte.", "Ne répète PAS la salutation."),
-        "en": ("Greet warmly in one short sentence.", "Do NOT repeat greeting."),
-        "ar": ("رحب بالعميل بجملة قصيرة ودافئة.", "لا تكرر التحية."),
-        "ar-latin": ("Greet in Darija Latin: e.g. 'mrhba, kifach nqdar n3awnk?'", "Do NOT repeat greeting."),
+        "fr": ("Accueille chaleureusement en français, une phrase courte.", "Ne répète PAS la salutation."),
+        "en": ("Greet warmly in English, one short sentence.", "Do NOT repeat greeting."),
+        "ar": ("رحب بالعميل بجملة قصيرة بالعربية فقط — مثال: 'وعليكم السلام، مرحبا! كيفاش نقدر نعاونك؟'", "لا تكرر التحية."),
+        "ar-latin": ("Greet in Latin Darija only — e.g. 'wa3lik salam 🌷 kifach nqdar n3awnk?'", "Do NOT repeat greeting."),
     }
     greeting_rule = greetings.get(language, greetings["ar"])[0 if is_first_turn else 1]
 
     flow_note = ""
     if ai_flow_state == "order_created":
-        flow_note = "\nNOTE: Order just created — confirm briefly and warmly, do NOT repeat full details."
+        flow_note = "\nNOTE: Order just created — confirm briefly and warmly."
     elif ai_flow_state == "order_cancelled":
         flow_note = "\nNOTE: Order just cancelled — acknowledge and offer further help."
     elif ai_flow_state == "pending_cancel_choice":
@@ -438,16 +450,12 @@ def build_prompt(
 
     gender_note = ""
     if customer_gender == "female":
-        gender_note = "\nCUSTOMER GENDER: Female — use feminine forms: raki, diri, te9dri, 7abba, kayna, etc."
+        gender_note = "\nCUSTOMER IS FEMALE — use feminine: raki, diri, te9dri, 7abba, راكي, ديري, حبيتي"
     elif customer_gender == "male":
-        gender_note = "\nCUSTOMER GENDER: Male — use masculine forms: rak, dir, te9dar, 7ab, kayn, etc."
+        gender_note = "\nCUSTOMER IS MALE — use masculine: rak, dir, te9dar, 7ab, راك, دير, حبيت"
 
-    store_instructions = (
-        "STORE-SPECIFIC INSTRUCTIONS:\n" + ai_system_prompt
-        if ai_system_prompt else ""
-    )
+    store_instructions = ("STORE-SPECIFIC INSTRUCTIONS:\n" + ai_system_prompt if ai_system_prompt else "")
 
-    # ── Base sections — always included ──────────────────────────────────────
     sections = [
         SECTION_IDENTITY.format(store_name=store_name, flow_note=flow_note + gender_note),
         SECTION_LANGUAGE.format(lang_rule=lang_rule, greeting_rule=greeting_rule),
@@ -456,7 +464,6 @@ def build_prompt(
         SECTION_EXAMPLES,
     ]
 
-    # ── Intent-specific sections ──────────────────────────────────────────────
     if intent == "order":
         sections += [
             SECTION_PRODUCTS.format(product_catalog=product_catalog),
@@ -464,32 +471,26 @@ def build_prompt(
             SECTION_SHIPPING.format(shipping_section=shipping_section),
         ]
     elif intent == "inquiry":
-        sections += [
-            SECTION_PRODUCTS.format(product_catalog=product_catalog),
-        ]
+        sections += [SECTION_PRODUCTS.format(product_catalog=product_catalog)]
     elif intent == "cancel":
         sections += [
             SECTION_CANCEL,
             SECTION_ORDERS_CONTEXT.format(orders_context=orders_context),
         ]
     elif intent == "delivery":
-        sections += [
-            SECTION_SHIPPING.format(shipping_section=shipping_section),
-        ]
+        sections += [SECTION_SHIPPING.format(shipping_section=shipping_section)]
     elif intent == "trust":
         sections += [
             SECTION_TRUST,
             SECTION_PRODUCTS.format(product_catalog=product_catalog),
         ]
     else:
-        # general — show products + shipping overview
         sections += [
             SECTION_PRODUCTS.format(product_catalog=product_catalog),
             SECTION_SHIPPING.format(shipping_section=shipping_section),
         ]
 
     sections.append(SECTION_MANDATORY.format(store_instructions=store_instructions))
-
     return "\n".join(sections).strip()
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -514,31 +515,29 @@ def detect_gender_from_name(name: str | None) -> str | None:
         "moufida","nabila","nadjet","nadjia","nawal","nessrine","nihed","nissrine",
         "nouara","ouahiba","ouardia","rahma","raima","rajaa","razika","rebha","rekia",
         "rima","rokia","saadia","safia","saliha","sana","sarra","selima","sirine",
-        "taous","thilelli","thinhinane","tizi","warda","yamina","yousra","zakia","zakia",
-        "nadya","nadia","samia","soraya","souha","sylia","tinhinane","wissame",
+        "taous","thilelli","thinhinane","tizi","warda","yamina","yousra","zakia",
+        "nadya","nadia","samia","soraya","souha","sylia","tinhinane","wissame","hadjer",
+        "mounira","kenza","lilia","assia","nora","nadera","saida","fatma","zoubida",
     }
     male_names = {
         "ahmed","mohamed","ali","omar","youssef","hamza","amine","karim","walid","bilal",
         "adel","hichem","nassim","riad","samir","tarek","issam","nabil","yazid","zinedine",
         "salim","redouane","lotfi","sofiane","rafik","mehdi","badr","ramzi","anis","sami",
         "ilyes","ayoub","abdelkader","abderrahmane","abdelhamid","abdelhak","abdelaziz",
-        "abdelmalek","abdelmoumen","abd","abdo","abdou","mourad","mokhtar","mustapha",
-        "mustafa","nouredine","rachid","slimane","toufik","younes","zakaria","zaki",
-        "lamine","lahcene","larbi","lazhar","lyes","mahfoud","malek","malik","mansour",
-        "massinissa","mbarek","miloud","mimoun","mouloud","nacer","nasser","nawfel",
-        "oussama","rabah","ramzy","rassim","rayen","rayane","rayan","redha","rida",
-        "saad","sabri","sad","saddek","salah","seddik","selim","shamseddine","smain",
-        "tahar","taki","tarik","tayeb","tewfik","toufiq","wassim","yacine","yahia",
-        "yahya","yanis","yann","yassine","yassin","yousri","youcef","zakari","zine",
-        "zineddin","ziyad","zoubir","zoubeyr","noureddine","nordine","nordine","ferhat",
-        "fares","fethi","fouad","ghiles","hakim","hamid","hani","haroun","harun",
-        "hassane","hassen","hocine","houssem","houari","ibrahim","idris","ilyess",
-        "imad","imed","ishak","ismail","islem","jawed","jawher","jawad","karimo",
-        "khaled","khalil","lakhdar","lamine","moussa","mounir","mounib","mohand",
+        "abdelmalek","abd","abdo","abdou","mourad","mokhtar","mustapha","mustafa",
+        "nouredine","rachid","slimane","toufik","younes","zakaria","zaki","lamine",
+        "lahcene","larbi","lazhar","lyes","mahfoud","malek","malik","mansour","massinissa",
+        "mbarek","miloud","mimoun","mouloud","nacer","nasser","nawfel","oussama","rabah",
+        "ramzy","rassim","rayen","rayane","rayan","redha","rida","saad","sabri","saddek",
+        "salah","seddik","selim","smain","tahar","tarik","tayeb","tewfik","toufiq",
+        "wassim","yacine","yahia","yahya","yanis","yassine","yassin","youcef","zakari",
+        "zine","ziyad","zoubir","noureddine","nordine","ferhat","fares","fethi","fouad",
+        "ghiles","hakim","hamid","hani","haroun","hassane","hassen","hocine","houssem",
+        "houari","ibrahim","idris","ilyess","imad","imed","ishak","ismail","islem",
+        "jawed","jawher","jawad","khaled","khalil","lakhdar","moussa","mounir","mohand",
     }
     if first in female_names: return "female"
     if first in male_names: return "male"
-    # Arabic female name patterns
     if re.search(r'(ة|ى)$', name.strip().split()[0]): return "female"
     return None
 
@@ -572,7 +571,7 @@ Rules:
   * customerPhone (not null, at least 8 digits)
   * wilaya (not null)
   * items (not empty, productName not null)
-  * Confirmation words: oui/wah/ih/wi/wakha/ايه/وي/نعم/correct/c'est bon/cbon/sah/koulchi sah/صح/نعم صح/wah sah/ih sah
+  * Confirmation: oui/wah/ih/wi/wakha/ايه/وي/نعم/correct/c'est bon/cbon/sah/koulchi sah/صح/نعم صح
 - baladiya and address are OPTIONAL — do not block canAutoCreate if missing
 - shippingOption defaults to "home_delivery" if: à domicile/livraison/chez moi/dar/البيت/لدار/توصيل/l dar
 - Extract variant combining color AND size: "Bleu taille L" → "Bleu - L"
@@ -616,6 +615,9 @@ async def extract_order(history: list, products: list) -> dict:
             print(f"[Extraction] Attempt {attempt + 1} failed: {e}")
     return {"intent": "other", "canAutoCreate": False, "orderData": None, "cancelPhone": None}
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# PROCESS MESSAGE
+# ═══════════════════════════════════════════════════════════════════════════════
 
 async def process_message(request) -> dict:
     history = request.history
@@ -655,7 +657,7 @@ async def process_message(request) -> dict:
             if re.search(r'\b(حابة|بغيت\s+نطلبي|راني\s+حابة|نحبي|7abba|raki|diri|te9dri)\b', content):
                 customer_gender = "female"
                 break
-            if re.search(r'\b(حاب|راني\s+حاب|7ab\b|rak\b|dir\b|te9dar\b)\b', content):
+            if re.search(r'\b(حاب\b|راني\s+حاب|7ab\b|rak\b|dir\b|te9dar\b)\b', content):
                 customer_gender = "male"
                 break
 
@@ -718,7 +720,8 @@ async def process_message(request) -> dict:
         except Exception as e:
             print(f"[Agent] AI call attempt {attempt + 1} failed: {e}")
             if attempt == 2:
-                reply = "سماحلي، صرا مشكل تقني. حاول مرة أخرى."
+                reply = "سمحلي، ممكن تعاود وش قتلي "
+
 
     # ── Order extraction ──────────────────────────────────────────────────────
     extraction = await extract_order(history, request.products)
