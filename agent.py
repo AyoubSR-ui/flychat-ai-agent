@@ -602,21 +602,20 @@ async def extract_order(history: list, products: list) -> dict:
         role = "user" if m.role == "customer" else "assistant"
         messages.append({"role": role, "content": m.content})
 
-    response = await client.chat.completions.create(
-        model="gpt-4.1-mini",
-        max_tokens=500,
-        temperature=0,
-        response_format={"type": "json_object"},
-        messages=messages,
-    )
-    try:
-        return json.loads(response.choices[0].message.content)
-    except Exception:
-        return {"intent": "other", "canAutoCreate": False, "orderData": None, "cancelPhone": None}
+    for attempt in range(3):
+        try:
+            response = await client.chat.completions.create(
+                model="gpt-4.1-mini",
+                max_tokens=500,
+                temperature=0,
+                response_format={"type": "json_object"},
+                messages=messages,
+            )
+            return json.loads(response.choices[0].message.content)
+        except Exception as e:
+            print(f"[Extraction] Attempt {attempt + 1} failed: {e}")
+    return {"intent": "other", "canAutoCreate": False, "orderData": None, "cancelPhone": None}
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# PROCESS MESSAGE — MAIN ENTRY POINT
-# ═══════════════════════════════════════════════════════════════════════════════
 
 async def process_message(request) -> dict:
     history = request.history
@@ -645,14 +644,13 @@ async def process_message(request) -> dict:
     if chosen_language and len(prior_turns) <= 2:
         language = chosen_language
 
-    # ── Intent classification (fast, no API) ─────────────────────────────────
+    # ── Intent classification ─────────────────────────────────────────────────
     intent = classify_intent_fast(history)
 
-    # ── Gender detection from conversation history ────────────────────────────
+    # ── Gender detection ──────────────────────────────────────────────────────
     customer_gender = None
     for m in history:
         if m.role == "customer" and len(m.content) > 3:
-            # Try to detect gender from Arabic grammar clues
             content = m.content
             if re.search(r'\b(حابة|بغيت\s+نطلبي|راني\s+حابة|نحبي|7abba|raki|diri|te9dri)\b', content):
                 customer_gender = "female"
@@ -661,11 +659,9 @@ async def process_message(request) -> dict:
                 customer_gender = "male"
                 break
 
-    # Also try from extracted name if available
     if not customer_gender:
         for m in history:
             if m.role in ("agent", "bot") and re.search(r'(اسم|smiya|nom)', m.content.lower()):
-                # Look for the next customer message which might have the name
                 idx = history.index(m)
                 if idx + 1 < len(history) and history[idx + 1].role == "customer":
                     name_candidate = history[idx + 1].content.strip()
@@ -700,7 +696,7 @@ async def process_message(request) -> dict:
         customer_gender=customer_gender,
     )
 
-    # ── AI reply ──────────────────────────────────────────────────────────────
+    # ── AI reply with auto-retry ──────────────────────────────────────────────
     openai_messages = [{"role": "system", "content": system_prompt}]
     for m in history[-20:]:
         if m.role == "customer":
@@ -708,13 +704,21 @@ async def process_message(request) -> dict:
         elif m.role in ("agent", "bot"):
             openai_messages.append({"role": "assistant", "content": m.content})
 
-    response = await client.chat.completions.create(
-        model="gpt-4.1-mini",
-        max_tokens=700,
-        temperature=0.3,
-        messages=openai_messages,
-    )
-    reply = response.choices[0].message.content.strip()
+    reply = None
+    for attempt in range(3):
+        try:
+            response = await client.chat.completions.create(
+                model="gpt-4.1-mini",
+                max_tokens=700,
+                temperature=0.3,
+                messages=openai_messages,
+            )
+            reply = response.choices[0].message.content.strip()
+            break
+        except Exception as e:
+            print(f"[Agent] AI call attempt {attempt + 1} failed: {e}")
+            if attempt == 2:
+                reply = "سماحلي، صرا مشكل تقني. حاول مرة أخرى."
 
     # ── Order extraction ──────────────────────────────────────────────────────
     extraction = await extract_order(history, request.products)
