@@ -50,6 +50,7 @@ class ChatRequest(BaseModel):
     recentOrders: list[RecentOrder]
     aiFlowState: Optional[str] = None
     detectedLanguage: Optional[str] = None
+    shippingOptions: Optional[dict] = None
 
 
 class OrderItem(BaseModel):
