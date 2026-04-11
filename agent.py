@@ -1,6 +1,7 @@
 import os
 import json
 import re
+from typing import Never
 from openai import AsyncOpenAI
 from lingua import Language, LanguageDetectorBuilder
 
@@ -65,7 +66,11 @@ DETECT AND MATCH the customer's language STRICTLY — one script only, never mix
 
 RULE: Customer writes in ONE script → you reply in THAT SAME script ONLY.
 NEVER mix scripts in the same reply under any circumstances.
+NEVER switch language unless customer explicitly switches first.
+CRITICAL: If customer writes in Latin Darija or French — reply 100% in Latin/French. NEVER switch to Arabic mid-conversation.
+If customer started in Latin Darija → stay in Latin Darija for entire conversation even if you're unsure.
 DEFAULT fallback (when unsure): "وي، مرحبا! كيفاش نقدر نعاونك؟\""""
+ 
 
 SECTION_VOCABULARY = """
 ━━━ ALGERIAN VOCABULARY (STRICT — NEVER MOROCCAN) ━━━
@@ -73,7 +78,7 @@ LATIN: wah/ih=yes | la=no | smahli=excuse me(errors only) | wakha=okay | doka/de
        nhark zin=good day | mrhba=welcome | yatik sa7a=thank you | koulchi sah?=correct?
        9oli=tell me | 3tini=give me | ch7al=how much | bzaf=a lot | chwiya=a little
        kayn=available(m) | kayna=available(f) | makanch=not available | khalas=done
-       rak=you(m) | raki=you(f) | manich=I'm not | machi=not | lazem=must
+       rak=you(m) | raki=you(f) | manich=I'm not | machi=not | lazem=must | Winta=when | tawsalni= receive it | À domicile= home delivery
 
 ARABIC: وي/إيه=yes | لا=no | سمحلي=excuse me(errors only) | واخا=okay | دوكا/درك=now | مليح=good
         نهارك زين=good day | مرحبا=welcome | يعطيك الصحة=thank you | كل شيء صح؟=correct?
@@ -273,6 +278,8 @@ Phone "30811882" (8 digits) → "رقم الهاتف لازم 10 أرقام — 
 Phone "661234567" without 0 → "رقم الهاتف لازم يبدأ بـ 0، مثل: 0661234567"
 First name only "أمينة" → "لازم الاسم الكامل — الاسم واللقب معاً."
 No shipping stated → "واش تحب توصيل للدار ولا تستلم من الفرع؟"
+"À domicile" / "domicile" / "chez moi" → means home delivery — DO NOT ask again, accept it
+"pickup" / "bureau" / "point relais" → means pickup — DO NOT ask again, accept it
 No wilaya → "وين تسكني؟  الولاية لو سمحتي"
 
 ORDER CONFIRMED — always send status:
@@ -606,12 +613,14 @@ Schema:
 
 Rules:
 - canAutoCreate = true ONLY when ALL of these are present AND customer confirmed:
-  * customerName — must have first AND last name (at least 2 words)
+  * customerName — must have first AND last name (at least 2 words)* customerName — must have at least 2 characters. Accept names like "Hamdani Maissa", "Sara Bel", "محمد أمين". Do NOT reject valid 2-word names.
   * customerPhone — must be exactly 9 or 10 digits (Algerian format). REJECT if less than 9 digits.
   * wilaya — must be a valid Algerian wilaya name
   * items — not empty, productName not null, quantity >= 1
   * shippingOption — must be explicitly stated by customer ("للدار"/"l dar"/"domicile"/"توصيل" = home_delivery, "من الفرع"/"pickup"/"bureau" = pickup). NEVER assume — if not stated, canAutoCreate = false
   * Customer confirmed with: oui/wah/ih/wi/wakha/ايه/وي/نعم/correct/c'est bon/cbon/sah/koulchi sah/صح/نعم صح/وي صح
+  * shippingOption defaults to "home_delivery" if customer says any of: à domicile/a domicile/domicile/livraison/chez moi/dar/البيت/لدار/توصيل/l dar/للدار/home/للبيت/au domicile
+  * shippingOption = "pickup" ONLY if customer explicitly says: pickup/من الفرع/bureau/point relais/retrait
 
 STRICT VALIDATION:
 - Phone "30811882" (8 digits) → REJECT, canAutoCreate = false
@@ -693,6 +702,37 @@ async def process_message(request) -> dict:
     if chosen_language and len(prior_turns) <= 2:
         language = chosen_language
 
+     # ── Resume detection — check if AI missed a response ─────────────────────
+    # If last message is from customer AND previous bot message was > 1 min ago
+    # AND customer sent another message → AI was down, resume from where we stopped
+    from datetime import datetime, timezone, timedelta
+    resume_context = ""
+    if len(history) >= 2:
+        last_msg = history[-1]
+        prev_bot_msgs = [m for m in history if m.role == "bot"]
+        if last_msg.role == "customer" and prev_bot_msgs:
+            # Find last bot message before current customer message
+            last_bot = prev_bot_msgs[-1]
+            # Count unanswered customer messages (customer sent multiple without bot reply)
+            unanswered = []
+            for m in reversed(history):
+                if m.role == "customer":
+                    unanswered.append(m.content)
+                elif m.role == "bot":
+                    break
+            if len(unanswered) > 1:
+                # Customer sent multiple messages without response — AI was down
+                resume_context = (
+                    "\n\nRESUME CONTEXT: The AI was temporarily unavailable. "
+                    "The customer sent these messages without receiving a response: "
+                    + " | ".join(reversed(unanswered)) +
+                    "\nThe last question/request you asked the customer was: " +
+                    last_bot.content[:200] +
+                    "\nIMPORTANT: Resume naturally from where the conversation stopped. "
+                    "Do NOT greet again. Do NOT ask what you already asked. "
+                    "Process the customer's answers and continue the flow."
+                )   
+
     # ── Intent classification ─────────────────────────────────────────────────
     intent = classify_intent_fast(history)
 
@@ -731,7 +771,12 @@ async def process_message(request) -> dict:
     else:
         orders_context = "لا توجد طلبات حديثة."
 
-    # ── Build selective prompt ────────────────────────────────────────────────
+   
+   # Append resume context to store instructions if needed
+    combined_system_prompt = request.aiSystemPrompt or ""
+    if resume_context:
+        combined_system_prompt = (combined_system_prompt + resume_context).strip()
+
     system_prompt = build_prompt(
         intent=intent,
         store_name=request.storeName,
@@ -741,7 +786,7 @@ async def process_message(request) -> dict:
         product_catalog=product_catalog,
         orders_context=orders_context,
         shipping_section=shipping_section,
-        ai_system_prompt=request.aiSystemPrompt,
+        ai_system_prompt=combined_system_prompt or None,
         customer_gender=customer_gender,
     )
 
