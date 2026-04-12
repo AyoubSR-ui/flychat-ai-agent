@@ -798,6 +798,14 @@ async def process_message(request) -> dict:
         locked = request.detectedLanguage if request.detectedLanguage else None
         language = detect_language(last_customer_msg, locked)
         word_count = len(last_customer_msg.strip().split())
+
+        # FIX: if last message is uncertain, check full conversation history
+        if is_language_uncertain(last_customer_msg) and not locked:
+            all_customer_text = " ".join(
+                m.content for m in history if m.role == "customer"
+            )
+            language = detect_language(all_customer_text, locked)
+
         if locked and not chosen_language:
             if locked == "ar-latin" and _has_latin_darija_cues(last_customer_msg):
                 language = "ar-latin"
