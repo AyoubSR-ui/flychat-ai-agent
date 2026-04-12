@@ -131,7 +131,9 @@ Collect ALL fields required — ask only for what's missing:
 6. Baladiya (optional but ask)
 7. Street address
 8. Shipping: home delivery or pickup
-
+9. If customer wants to change phone number after order created → DO NOT update it automatically.
+  Reply: "سماحلي، تبديل رقم الهاتف لازم يكون مع فريق الدعم باش نضمنو الأمان. سنتاصلوا بيك."
+  (Latin: "smahli, tbdil numéro téléphone lazem ykoun m3a support team. n2akdou m3ak 9rib.")
 
 
 RULES:
@@ -597,8 +599,14 @@ Return ONLY a valid JSON object — no markdown, no explanation.
 
 Schema:
 {
-  "intent": "new_order" | "cancel_order" | "status_check" | "product_inquiry" | "other",
+  "intent": "new_order" | "cancel_order" | "update_order" | "status_check" | "product_inquiry" | "other",
   "canAutoCreate": boolean,
+  "canAutoUpdate": boolean,
+  "updateData": {
+    "shippingOption": "home_delivery" | "pickup" | null,
+    "address": string | null,
+    "wilaya": string | null
+  } | null,
   "orderData": {
     "customerName": string | null,
     "customerPhone": string | null,
