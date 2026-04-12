@@ -284,7 +284,7 @@ No wilaya → "وين تسكني؟  الولاية لو سمحتي"
 
 ORDER CONFIRMED — always send status:
 Arabic: "تم تسجيل الطلب بنجاح ✅ سنتواصل معك قريباً للتأكيد. نهارك زين 🌷"
-Latin:  "tm t2kid talab ✅ n2akdou m3ak 9rib. nhark zin 🌸"
+Latin:  "tm t2kid talab ✅ On vous contacte 9rib. nhark zin 🌸"
 French: "Commande confirmée ✅ On vous contacte bientôt. Bonne journée 🌷"
 
 ORDER CANCELLED — always confirm:
@@ -618,8 +618,10 @@ Rules:
   * wilaya — must be a valid Algerian wilaya name
   * items — not empty, productName not null, quantity >= 1
   * shippingOption — must be explicitly stated by customer ("للدار"/"l dar"/"domicile"/"توصيل" = home_delivery, "من الفرع"/"pickup"/"bureau" = pickup). NEVER assume — if not stated, canAutoCreate = false
-  * Customer confirmed with: oui/wah/ih/wi/wakha/ايه/وي/نعم/correct/c'est bon/cbon/sah/koulchi sah/صح/نعم صح/وي صح
-  * shippingOption defaults to "home_delivery" if customer says any of: à domicile/a domicile/domicile/livraison/chez moi/dar/البيت/لدار/توصيل/l dar/للدار/home/للبيت/au domicile
+  * Confirmation ONLY counts when customer confirms AFTER seeing the full order summary with ALL fields collected.
+  * Valid confirmation words: oui/wah/ih/wi/wakha/ايه/وي/نعم/correct/c'est bon/cbon/sah/koulchi sah/صح/نعم صح
+  * "Oui hadi hiya" or "oui" mid-conversation (choosing an option) is NOT confirmation — only counts after full summary shown
+  * canAutoCreate = false if customer is still asking questions or choosing between options  * shippingOption defaults to "home_delivery" if customer says any of: à domicile/a domicile/domicile/livraison/chez moi/dar/البيت/لدار/توصيل/l dar/للدار/home/للبيت/au domicile
   * shippingOption = "pickup" ONLY if customer explicitly says: pickup/من الفرع/bureau/point relais/retrait
 
 STRICT VALIDATION:
