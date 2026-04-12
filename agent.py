@@ -131,9 +131,6 @@ Collect ALL fields required — ask only for what's missing:
 6. Baladiya (optional but ask)
 7. Street address
 8. Shipping: home delivery or pickup
-9. If customer wants to change phone number after order created → DO NOT update it automatically.
-  Reply: "سماحلي، تبديل رقم الهاتف لازم يكون مع فريق الدعم باش نضمنو الأمان. سنتاصلوا بيك."
-  (Latin: "smahli, tbdil numéro téléphone lazem ykoun m3a support team. n2akdou m3ak 9rib.")
 
 
 RULES:
@@ -621,8 +618,12 @@ Schema:
 
 Rules:
 - canAutoCreate = true ONLY when ALL of these are present AND customer confirmed:
-  * customerName — must have first AND last name (at least 2 words)* customerName — must have at least 2 characters. Accept names like "Hamdani Maissa", "Sara Bel", "محمد أمين". Do NOT reject valid 2-word names.
-  * customerPhone — must be exactly 9 or 10 digits (Algerian format). REJECT if less than 9 digits.
+  * customerName — accept ANY 2-word combination as full name. "Hamida zarkawi" ✅ "Sara B" ✅ "محمد أمين" ✅
+  * NEVER reject a name that has at least 2 words separated by space. Do NOT ask again if 2 words given.  
+  * customerPhone — must be exactly  10 digits (Algerian format). REJECT if less than 10 digits. "0661282828" ✅ "0562145634" ✅ "0774534213" ✅ "30811882" ❌ "301987642" ❌  "661282828" ❌
+  * Count digits only (ignore spaces/dashes). REJECT only if fewer than 10 digits.
+  * NEVER reject "0660191919" format — it is valid.
+  * never ask question back if aleady user answered with valid information.
   * wilaya — must be a valid Algerian wilaya name
   * items — not empty, productName not null, quantity >= 1
   * shippingOption — must be explicitly stated by customer ("للدار"/"l dar"/"domicile"/"توصيل" = home_delivery, "من الفرع"/"pickup"/"bureau" = pickup). NEVER assume — if not stated, canAutoCreate = false
@@ -631,6 +632,20 @@ Rules:
   * "Oui hadi hiya" or "oui" mid-conversation (choosing an option) is NOT confirmation — only counts after full summary shown
   * canAutoCreate = false if customer is still asking questions or choosing between options  * shippingOption defaults to "home_delivery" if customer says any of: à domicile/a domicile/domicile/livraison/chez moi/dar/البيت/لدار/توصيل/l dar/للدار/home/للبيت/au domicile
   * shippingOption = "pickup" ONLY if customer explicitly says: pickup/من الفرع/bureau/point relais/retrait
+  * If customer wants to change phone number after order created → DO NOT update it automatically.
+  Reply: "سماحلي، تبديل رقم الهاتف لازم يكون مع فريق الدعم باش نضمنو الأمان. سنتاصلوا بيك."
+  (Latin: "smahli, tbdil numéro téléphone lazem ykoun m3a support team. n2akdou m3ak 9rib.")
+  * NEVER create order if any required field is missing or invalid — if phone number is wrong, reply with correction and do NOT create order until valid number + all required informations given.
+  * Accept multiple fields at once — ask only for remaining missing ones
+  * NEVER ask for info already provided in conversation — scan full history before asking
+  * "tawsil l dar" / "للدار" / "l dar" / "domicile" = home_delivery — mark as collected, do NOT ask again
+  * If phone was given and looks like 10 digits — accept it, do NOT ask again
+  * If name has 2+ words — accept it, do NOT ask again
+  * If customer asks questions about the order or delivery options — canAutoCreate = false until they confirm they are ready to order
+  
+
+
+
 
 STRICT VALIDATION:
 - Phone "30811882" (8 digits) → REJECT, canAutoCreate = false
