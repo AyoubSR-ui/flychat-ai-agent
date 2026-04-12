@@ -168,7 +168,7 @@ Collect ALL fields required — ask only for what's missing:
 5. Wilaya
 6. Baladiya (optional but ask)
 7. Street address
-8. Shipping: home delivery or pickup
+8. Shipping: home delivery (للدار / l dar) or bureau (من البيرو / من الفرع)
 
 RULES:
 • Accept multiple fields at once — ask only for remaining missing ones
@@ -301,7 +301,7 @@ ARABIC DARIJA FULL ORDER FLOW (100% Arabic from start to finish):
 
 LATIN DARIJA FULL ORDER FLOW (100% Latin from start to finish):
 "Hab notalb" → "mrhba 🌷 kifach nqdar n3awnk?"
-"jalabiya rouge L" → "mlih, tawsil l dar aw pickup?"
+"jalabiya rouge L" → "mlih, tawsil l dar wala bureau?"
 "l dar" → "3tini smiytek kamla, numéro téléphone, wilaya w adresse."
 "Hamida Zarkawi 0660191919 Oran cite 5 num 12" →
 ─────────────────────
@@ -377,7 +377,7 @@ def classify_intent_fast(messages: list) -> str:
         return "order"
     if re.search(r'\b(arnaque|scam|fiable|مضمون|confiance|risque|cod|thi9|nthq|garanti)\b', recent):
         return "trust"
-    if re.search(r'\b(livraison|twsal|tawsil|tawsili|twsil|توصيل|delivery|wilaya|wila|ولاية|domicile|pickup)\b', recent):
+    if re.search(r'\b(livraison|twsal|tawsil|tawsili|twsil|توصيل|delivery|wilaya|wila|ولاية|domicile|pickup|bureau)\b', recent):
         return "delivery"
     if re.search(r'\b(ntlob|notalb|notlab|ntlab|commander|ndir|order|طلب|commande|n7eb|nheb|bghit|7ab|hab|ncommande)\b', recent):
         return "order"
@@ -474,7 +474,7 @@ def build_product_catalog(products: list, language: str) -> str:
 
 def build_shipping_section(shipping_options: dict | None) -> str:
     if not shipping_options:
-        return "Ask customer — home delivery (الى البيت) or pickup (من الفرع)."
+        return "Ask customer — home delivery (الى البيت) or bureau (من الفرع)."
 
     home_enabled = shipping_options.get("homeDeliveryEnabled", True)
     pickup_enabled = shipping_options.get("pickupEnabled", False)
@@ -723,7 +723,7 @@ Rules:
   * shippingOption = "home_delivery" if customer says:
     à domicile / domicile / livraison / chez moi / البيت / للدار / توصيل / l dar / للبيت /
     tawsil / tawsil l dar / tawsili / twsal / home / لدار / عندي / للدار
-  * shippingOption = "pickup" ONLY if: pickup / من الفرع / bureau / point relais / retrait
+* shippingOption = "pickup" ONLY if: bureau / من البيرو / من الفرع / point relais / retrait
 
   * Accept multiple fields at once — ask only for remaining missing ones
   * Phone 9-10 digits → accept, do NOT ask again
