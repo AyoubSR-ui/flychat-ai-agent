@@ -70,7 +70,7 @@ NEVER switch language unless customer explicitly switches first.
 CRITICAL: If customer writes in Latin Darija or French — reply 100% in Latin/French. NEVER switch to Arabic mid-conversation.
 If customer started in Latin Darija → stay in Latin Darija for entire conversation even if you're unsure.
 DEFAULT fallback (when unsure): "وي، مرحبا! كيفاش نقدر نعاونك؟\""""
- 
+
 
 SECTION_VOCABULARY = """
 ━━━ ALGERIAN VOCABULARY (STRICT — NEVER MOROCCAN) ━━━
@@ -319,11 +319,16 @@ def classify_intent_fast(messages: list) -> str:
         if m.role == "customer"
     ][-3:]).lower()
 
-    if re.search(r'\b(cancel|annul|nlghi|ncanceli|الغ|نلغي|nlgha2|ilgha2|nbdel)\b', recent):
+    # FIX: removed "nbdel" from cancel — it means "change", not "cancel"
+    if re.search(r'\b(cancel|annul|nlghi|ncanceli|الغ|نلغي|nlgha2|ilgha2)\b', recent):
         return "cancel"
+    # FIX: "nbdel/nbadel/changer/modifier/غير/بدل" = update request → load ORDER sections
+    if re.search(r'\b(nbdel|nbadel|changer|modifier|غير|بدل|bdel|update)\b', recent):
+        return "order"
     if re.search(r'\b(arnaque|scam|fiable|مضمون|confiance|risque|cod|thi9|nthq|garanti)\b', recent):
         return "trust"
-    if re.search(r'\b(livraison|twsal|توصيل|delivery|wilaya|wila|ولاية|domicile|pickup)\b', recent):
+    # FIX: added "tawsil/twsal" to delivery intent
+    if re.search(r'\b(livraison|twsal|tawsil|توصيل|delivery|wilaya|wila|ولاية|domicile|pickup)\b', recent):
         return "delivery"
     if re.search(r'\b(ntlob|commander|ndir|order|طلب|commande|n7eb|nheb|bghit|7ab|ncommande)\b', recent):
         return "order"
@@ -413,7 +418,6 @@ def build_shipping_section(shipping_options: dict | None) -> str:
     pickup_label = shipping_options.get("pickupLabel", "من الفرع")
     wilaya_prices = shipping_options.get("wilayaPrices", {})
 
-    # Build readable price table
     price_lines = []
     for wilaya, prices in wilaya_prices.items():
         if isinstance(prices, dict):
@@ -619,41 +623,51 @@ Schema:
 Rules:
 - canAutoCreate = true ONLY when ALL of these are present AND customer confirmed:
   * customerName — accept ANY 2-word combination as full name. "Hamida zarkawi" ✅ "Sara B" ✅ "محمد أمين" ✅
-  * NEVER reject a name that has at least 2 words separated by space. Do NOT ask again if 2 words given.  
-  * customerPhone — must be exactly  10 digits (Algerian format). REJECT if less than 10 digits. "0661282828" ✅ "0562145634" ✅ "0774534213" ✅ "30811882" ❌ "301987642" ❌  "661282828" ❌
-  * Count digits only (ignore spaces/dashes). REJECT only if fewer than 10 digits.
-  * NEVER reject "0660191919" format — it is valid.
-  * never ask question back if aleady user answered with valid information.
+  * NEVER reject a name that has at least 2 words separated by space. Do NOT ask again if 2 words given.
+  * customerPhone — accept 9 OR 10 digits (Algerian format). Count digits only, ignore spaces/dashes.
+    10 digits with leading 0: "0661282828" ✅ "0660191919" ✅ "0774534213" ✅
+    9 digits without leading 0: "661282828" ✅ "662191919" ✅
+    REJECT only if fewer than 9 digits: "30811882" ❌ (8 digits) "3019876" ❌ (7 digits)
+  * NEVER reject "0660191919" format — it is always valid.
+  * never ask question back if customer already answered with valid information.
   * wilaya — must be a valid Algerian wilaya name
   * items — not empty, productName not null, quantity >= 1
-  * shippingOption — must be explicitly stated by customer ("للدار"/"l dar"/"domicile"/"توصيل" = home_delivery, "من الفرع"/"pickup"/"bureau" = pickup). NEVER assume — if not stated, canAutoCreate = false
+  * shippingOption — must be stated by customer or clearly implied. See defaults below.
   * Confirmation ONLY counts when customer confirms AFTER seeing the full order summary with ALL fields collected.
   * Valid confirmation words: oui/wah/ih/wi/wakha/ايه/وي/نعم/correct/c'est bon/cbon/sah/koulchi sah/صح/نعم صح
   * "Oui hadi hiya" or "oui" mid-conversation (choosing an option) is NOT confirmation — only counts after full summary shown
-  * canAutoCreate = false if customer is still asking questions or choosing between options  * shippingOption defaults to "home_delivery" if customer says any of: à domicile/a domicile/domicile/livraison/chez moi/dar/البيت/لدار/توصيل/l dar/للدار/home/للبيت/au domicile
-  * shippingOption = "pickup" ONLY if customer explicitly says: pickup/من الفرع/bureau/point relais/retrait
+  * canAutoCreate = false if customer is still asking questions or choosing between options
+
+  * shippingOption defaults to "home_delivery" if customer says any of:
+    à domicile / a domicile / domicile / livraison / chez moi / dar / البيت / لدار / توصيل /
+    l dar / للدار / home / للبيت / au domicile / tawsil / tawsil l dar / tawsili / twsal /
+    twsil / livrer chez moi / للبيت / عندي / livrason / livraison chez moi
+  * shippingOption = "pickup" ONLY if customer explicitly says: pickup / من الفرع / bureau / point relais / retrait
+
   * If customer wants to change phone number after order created → DO NOT update it automatically.
-  Reply: "سماحلي، تبديل رقم الهاتف لازم يكون مع فريق الدعم باش نضمنو الأمان. سنتاصلوا بيك."
-  (Latin: "smahli, tbdil numéro téléphone lazem ykoun m3a support team. n2akdou m3ak 9rib.")
-  * NEVER create order if any required field is missing or invalid — if phone number is wrong, reply with correction and do NOT create order until valid number + all required informations given.
+    Reply: "سماحلي، تبديل رقم الهاتف لازم يكون مع فريق الدعم باش نضمنو الأمان. سنتاصلوا بيك."
+    (Latin: "smahli, tbdil numéro téléphone lazem ykoun m3a support team. n2akdou m3ak 9rib.")
+  * NEVER create order if any required field is missing or invalid
   * Accept multiple fields at once — ask only for remaining missing ones
   * NEVER ask for info already provided in conversation — scan full history before asking
-  * "tawsil l dar" / "للدار" / "l dar" / "domicile" = home_delivery — mark as collected, do NOT ask again
-  * If phone was given and looks like 10 digits — accept it, do NOT ask again
+  * "tawsil l dar" / "للدار" / "l dar" / "domicile" / "tawsil" = home_delivery — mark as collected, do NOT ask again
+  * If phone was given and looks like 9-10 digits — accept it, do NOT ask again
   * If name has 2+ words — accept it, do NOT ask again
   * If customer asks questions about the order or delivery options — canAutoCreate = false until they confirm they are ready to order
-  
 
-
-
+- canAutoUpdate = true ONLY when:
+  * An order already exists (aiFlowState = order_created)
+  * Customer requests a change to shipping option, address, or wilaya (NOT phone)
+  * updateData must contain at least one non-null field
 
 STRICT VALIDATION:
-- Phone "30811882" (8 digits) → REJECT, canAutoCreate = false
-- Phone "0661234567" (10 digits starting 0) → ACCEPT
-- Phone "661234567" (9 digits) → ACCEPT
-- Name "أمينة" (1 word) → REJECT, canAutoCreate = false  
-- Name "أمينة طالبي" (2 words) → ACCEPT
-- shippingOption not mentioned → REJECT, canAutoCreate = false
+- Phone "30811882" (8 digits) → REJECT ❌
+- Phone "0661234567" (10 digits starting 0) → ACCEPT ✅
+- Phone "661234567" (9 digits without leading 0) → ACCEPT ✅
+- Phone "0660191919" (10 digits) → ACCEPT ✅
+- Name "أمينة" (1 word) → REJECT ❌, canAutoCreate = false
+- Name "أمينة طالبي" (2 words) → ACCEPT ✅
+- shippingOption not mentioned and not implied → canAutoCreate = false
 - baladiya and address are OPTIONAL — do not block canAutoCreate if missing
 - Extract variant combining color AND size: "Bleu taille L" → "Bleu - L"
 - cancelPhone: extract when customer wants to cancel
@@ -727,18 +741,13 @@ async def process_message(request) -> dict:
     if chosen_language and len(prior_turns) <= 2:
         language = chosen_language
 
-     # ── Resume detection — check if AI missed a response ─────────────────────
-    # If last message is from customer AND previous bot message was > 1 min ago
-    # AND customer sent another message → AI was down, resume from where we stopped
-    from datetime import datetime, timezone, timedelta
+    # ── Resume detection ──────────────────────────────────────────────────────
     resume_context = ""
     if len(history) >= 2:
         last_msg = history[-1]
         prev_bot_msgs = [m for m in history if m.role == "bot"]
         if last_msg.role == "customer" and prev_bot_msgs:
-            # Find last bot message before current customer message
             last_bot = prev_bot_msgs[-1]
-            # Count unanswered customer messages (customer sent multiple without bot reply)
             unanswered = []
             for m in reversed(history):
                 if m.role == "customer":
@@ -746,7 +755,6 @@ async def process_message(request) -> dict:
                 elif m.role == "bot":
                     break
             if len(unanswered) > 1:
-                # Customer sent multiple messages without response — AI was down
                 resume_context = (
                     "\n\nRESUME CONTEXT: The AI was temporarily unavailable. "
                     "The customer sent these messages without receiving a response: "
@@ -756,7 +764,7 @@ async def process_message(request) -> dict:
                     "\nIMPORTANT: Resume naturally from where the conversation stopped. "
                     "Do NOT greet again. Do NOT ask what you already asked. "
                     "Process the customer's answers and continue the flow."
-                )   
+                )
 
     # ── Intent classification ─────────────────────────────────────────────────
     intent = classify_intent_fast(history)
@@ -796,8 +804,7 @@ async def process_message(request) -> dict:
     else:
         orders_context = "لا توجد طلبات حديثة."
 
-   
-   # Append resume context to store instructions if needed
+    # ── Append resume context to store instructions if needed ─────────────────
     combined_system_prompt = request.aiSystemPrompt or ""
     if resume_context:
         combined_system_prompt = (combined_system_prompt + resume_context).strip()
@@ -839,7 +846,6 @@ async def process_message(request) -> dict:
             if attempt == 2:
                 reply = "سمحلي، ممكن تعاود وش قتلي "
 
-
     # ── Order extraction ──────────────────────────────────────────────────────
     extraction = await extract_order(history, request.products)
     action = {"type": "none"}
@@ -879,6 +885,13 @@ async def process_message(request) -> dict:
         action = {
             "type": "cancel_order",
             "customerPhone": extraction["cancelPhone"],
+        }
+    # FIX: update_order action was never built — now wired correctly
+    elif extraction.get("canAutoUpdate") and extraction.get("updateData"):
+        action = {
+            "type": "update_order",
+            "customerPhone": (extraction.get("orderData") or {}).get("customerPhone"),
+            "updateData": extraction["updateData"],
         }
 
     return {
