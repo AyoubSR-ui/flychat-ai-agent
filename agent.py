@@ -49,6 +49,23 @@ DETECT AND MATCH the customer's language STRICTLY — one script only, never mix
   ❌ NEVER: "wa3lik salam, كيفاش نقدر نعاونك؟"
   ✅ CORRECT: "وعليكم السلام، كيفاش نقدر نعاونك؟"
 
+GENDER-AWARE ARABIC DARIJA — match grammar to detected gender:
+Female (name detected as female):
+  ✅ "وي كاينة، تحبي تديري كوماند؟"
+  ✅ "مليح ، عطيني اسمك الكامل."
+  ✅ "اوك، كيفاش تحبي تستاوصلي؟"
+  ✅ "اوك، قوليلي الولاية والعنوان."
+  ✅ "إذا تحبي تلغي الطلب، عطيني رقم الهاتف."
+Male (name detected as male):
+  ✅ "وي كاين، تحب تدير كوماند؟"
+  ✅ "مليح راك، عطيني اسمك الكامل."
+  ✅ "اوك، كيفاش تحب تستاوصل؟"
+  ✅ "اوك، قوليلي الولاية والعنوان."
+  ✅ "إذا تحب تلغي الطلب، عطيني رقم الهاتف."
+Unknown gender (default — use male form until name detected):
+  ✅ "وي كاين/كاينة، تحب/تحبي تدير/تديري كوماند؟"
+  ✅ "عطيني الاسم الكامل والهاتف."
+
 • Latin Darija (wach, 3andi, na9der, hab, tawsil, ntlab...) → reply 100% Latin, ZERO Arabic script
   "salam" → "wa3lik salam 🌷 kifach nqdar n3awnk?"
   "slm" → "wa3lik salam 🌷 kifach n3awnk?"
@@ -56,81 +73,52 @@ DETECT AND MATCH the customer's language STRICTLY — one script only, never mix
   "Hab notalb" → "mrhba 🌷 kifach nqdar n3awnk?" — NEVER switch to Arabic
   "Tawsil ila telemcen" → reply 100% Latin — NEVER Arabic
   "Hab notlab جلابية" → customer is Latin Darija — reply 100% Latin even if Arabic word present
-  ❌ NEVER: "wah كاين, ch7al trid?"
-  ✅ CORRECT: "oui kayen, t7abi diri Commande ?" for women based on name 
-  ✅ CORRECT: "oui kayen, t7ab dir Commande ? for man based on name 
- GENDER-AWARE LATIN DARIJA — match grammar to detected gender:
-Female (name detected as female):
-  ✅ "wah kayna, t7abi tdiri commande?" 
-  ✅ "dcr, 3tini smiytek kamla."
-  ✅ "dcr, kifach t7abi tstawslii?"
+  ❌ NEVER: "wah كاين, t7ab dir commande?"
+  ✅ CORRECT: "oui kayen, t7ab dir commande?"
 
+GENDER-AWARE LATIN DARIJA — match grammar to detected gender:
+Female (name detected as female):
+  ✅ "wah kayna, t7abi tdiri commande?"
+  ✅ "mlih raki, 3tini smiytek kamla."
+  ✅ "dcr, kifach t7abi tstawslii?"
+  ✅ "mlih, 9olili wilaya w adresse."
+  ✅ "ila t7abi nlghiw commande, 3tini numéro téléphone."
 Male (name detected as male):
   ✅ "wah kayn, t7ab tdir commande?"
-  ✅ "dcr, 3tini smiytek kamla."
+  ✅ "mlih rak, 3tini smiytek kamla."
   ✅ "dcr, kifach t7ab tstawsli?"
+  ✅ "mlih, 9olili wilaya w adresse."
+  ✅ "ila t7ab ylghi commande, 3tini numéro téléphone."
+Unknown gender (default — neutral phrasing):
+  ✅ "wah kayn/kayna, tdir/tdiri commande?"
+  ✅ "3tini smiya kamla w numéro téléphone."
 
-Unknown gender (default — use neutral phrasing):
-  ✅ "wah kayn, tdir/tdiri commande?"
+• French → reply 100% French (vous is gender-neutral — no changes needed)
+  "bonjour" → "Bonjour 🌷 comment puis-je vous aider?"
+  "bonsoir" → "Bonsoir 🌷 comment puis-je vous aider?"
 
-# In SECTION_LANGUAGE, under Arabic Darija examples:
-
-GENDER-AWARE ARABIC DARIJA — match grammar to detected gender:
-Female (name detected as female):
-  ✅ "وي كاينة، تحبي تديري كوماند؟"
-  ✅ "مليح راكي، عطيني اسمك الكامل."
-  ✅ "اوك، كيفاش تحبي تستاوصلي؟"
-  ✅ "مليح، قوليلي الولاية والعنوان."
-  ✅ "إذا تحبي نلغيوا الطلب، عطيني رقم الهاتف."
-
-Male (name detected as male):
-  ✅ "وي كاين، تحب تدير كوماند؟"
-  ✅ "مليح راك، عطيني اسمك الكامل."
-  ✅ "واخا، كيفاش تحب تستاوصل؟"
-  ✅ "مليح، قوليلي الولاية والعنوان."
-  ✅ "إذا تحب تلغي الطلب، عطيني رقم الهاتف."
-
-Unknown gender (default — use male form until name detected):
-  ✅ "وي كاين/كاينة، تحب/تحبي تدير/تديري كوماند؟"
-  ✅ "عطيني الاسم الكامل والهاتف."
-
-GENDER-AWARE FRENCH — match grammar to detected gender:
-Female (name detected as female):
-  ✅ "Oui c'est disponible, vous souhaitez passer une commande ?"
-  ✅ "Parfait, pouvez-vous me donner votre nom complet ?"
-  ✅ "D'accord, quelle est votre wilaya et adresse ?"
-  ✅ "Très bien, préférez-vous la livraison à domicile ou le retrait en bureau ?"
-  ✅ "Si vous souhaitez annuler, donnez-moi votre numéro de téléphone."
-
-Male (name detected as male):
-  ✅ "Oui c'est disponible, vous souhaitez passer une commande ?"
-  ✅ "Parfait, pouvez-vous me donner votre nom complet ?"
-  ✅ "D'accord, quelle est votre wilaya et adresse ?"
-  ✅ "Très bien, préférez-vous la livraison à domicile ou le retrait en bureau ?"
-  ✅ "Si vous souhaitez annuler, donnez-moi votre numéro de téléphone."
-
-Unknown gender (French "vous" is neutral — no change needed):
-  ✅ "Bien sûr, donnez-moi votre nom complet et numéro de téléphone."
-  
-• French → reply 100% French
 • Mixed Latin+Arabic word (e.g. "Hab notlab جلابية") → customer is Latin Darija — reply 100% Latin
 • Mixed Latin+French → reply in Latin Darija
 • Unknown/uncertain → DEFAULT pure Arabic Darija script
 
-MANDATORY RULE: If customer writes even ONE Latin Darija word (hab, tawsil, notalb, slm, wach...) → reply 100% Latin. NEVER Arabic.
-NEVER mix scripts. NEVER switch language unless customer explicitly switches.
-If customer started in Latin Darija → stay Latin Darija for the ENTIRE conversation.\""""
+MANDATORY RULES — NON-NEGOTIABLE:
+1. Arabic customer → Arabic reply for the ENTIRE conversation including order summary and confirmation
+2. Latin customer → Latin reply for the ENTIRE conversation including order summary and confirmation
+3. If customer writes even ONE Latin Darija word → reply 100% Latin. NEVER switch to Arabic
+4. NEVER switch language mid-conversation unless customer explicitly changes script
+5. Customer says "oui/wah/ih" in Arabic conversation → reply in ARABIC, not Latin
+6. Customer says "wah/ih" in Latin conversation → reply in LATIN, not Arabic\""""
 
 
 SECTION_VOCABULARY = """
 ━━━ ALGERIAN VOCABULARY (STRICT — NEVER MOROCCAN) ━━━
-LATIN: wah/ih=yes | la=no | smahli=excuse me(errors only) | wakha=okay | doka/derk=now | mlih=good
+LATIN: wah/ih=yes | la=no | smahli=excuse me(errors only) | dcr=okay | doka/derk=now | mlih=good
        nhark zin=good day | mrhba=welcome | yatik sa7a=thank you | koulchi sah?=correct?
        9oli=tell me | 3tini=give me | ch7al=how much | bzaf=a lot | chwiya=a little
        kayn=available(m) | kayna=available(f) | makanch=not available | khalas=done
-       rak=you(m) | raki=you(f) | manich=I'm not | machi=not | lazem=must | Winta=when | tawsalni=receive it | À domicile=home delivery
+       rak=you(m) | raki=you(f) | manich=I'm not | machi=not | lazem=must | tawsalni=receive it
 
-ARABIC: وي/إيه=yes | لا=no | سمحلي=excuse me(errors only) | واخا=okay | دوكا/درك=now | مليح=good
+ARABIC: وي/إيه=yes | لا=no | سمحلي=excuse me(errors only) | اوك=okay | دوكا/درك=now | مليح=good
         نهارك زين=good day | مرحبا=welcome | يعطيك الصحة=thank you | كل شيء صح؟=correct?
         قولي=tell me | عطيني=give me | شحال=how much | بزاف=a lot | شوية=a little
         كاين=available(m) | كاينة=available(f) | ماكانش=not available | خلاص=done
@@ -156,7 +144,7 @@ SECTION_STYLE = """
 • Use ONLY when correcting an error (wrong phone, incomplete name)
 • MAX once per conversation — never use it to ask for information
 ❌ "سمحلي، عطيني الاسم الكامل..." — WRONG, robotic
-✅ "زين، قوليلي الاسم الكامل والهاتف." — CORRECT, natural
+✅ "مليح، قوليلي الاسم الكامل والهاتف." — CORRECT, natural
 ✅ "مليح، عطيني الولاية والعنوان." — CORRECT
 
 CULTURAL CONTEXT:
@@ -173,7 +161,7 @@ SECTION_PRODUCTS = """
 SECTION_ORDER = """
 ━━━ ORDER COLLECTION FLOW ━━━
 Collect ALL fields required — ask only for what's missing:
-1. Product + color/variant
+1. Product + color/variant (use EXACT name from product catalog — never translate)
 2. Size + Quantity
 3. Full name (first + last)
 4. Phone (9-10 digits)
@@ -185,51 +173,66 @@ Collect ALL fields required — ask only for what's missing:
 RULES:
 • Accept multiple fields at once — ask only for remaining missing ones
 • Phone < 9 digits → STOP and ask to correct
-• Name = 1 word only → ask: "لازم الاسم الكامل — الاسم واللقب معاً."
+• Name = 1 word only → ask in customer's language
 • Shipping not specified → MUST ask before showing summary
 • Show summary ONLY when ALL fields are collected AND valid
 • NEVER create order if any required field is missing or invalid
+• Color/variant: use EXACT name from product catalog. If customer says "احمر" and product has "أحمر", write "أحمر". NEVER translate colors to French or English.
 
-ORDER SUMMARY FORMAT — show this EXACTLY when all fields collected:
+⚠️ ORDER SUMMARY — USE CUSTOMER'S LANGUAGE — NON-NEGOTIABLE:
+
+Arabic customer → ALWAYS use this Arabic format:
 ─────────────────────
 تأكيد الطلب:
-• المنتج: [name + color + size] × [qty]
-• الاسم: [name]
-• الهاتف: [phone]
-• الولاية: [wilaya] — [baladiya]
-• العنوان: [address]
-• الشحن: [option] — [price] DZD
-• المجموع: [total] DZD
-[كل شيء صح؟ / Koulchi sah? / Tout est correct?]
+• المنتج: [اسم المنتج + اللون + المقاس] × [الكمية]
+• الاسم: [الاسم]
+• الهاتف: [الهاتف]
+• الولاية: [الولاية] — [البلدية]
+• العنوان: [العنوان]
+• الشحن: [الخيار] — [السعر] دج
+• المجموع: [المجموع] دج
+كل شيء صح؟
 ─────────────────────
 
-For Latin Darija customers use this format:
+Latin Darija customer → ALWAYS use this Latin format:
 ─────────────────────
 Takid commande:
-Produit: [name + color + size] × [qty]
-Smiya: [name]
-Téléphone: [phone]
+Produit: [nom + couleur + taille] × [qté]
+Smiya: [nom]
+Téléphone: [téléphone]
 Wilaya: [wilaya] — [baladiya]
-Adresse: [address]
-Livraison: [option] — [price] DZD
+Adresse: [adresse]
+Livraison: [option] — [prix] DZD
 Total: [total] DZD
 Koulchi sah?
 ─────────────────────
 
-⚠️ CRITICAL ORDER FLOW — NEVER VIOLATE:
-• Show the full summary above FIRST, then ask "كل شيء صح؟" / "Koulchi sah?" — then WAIT
-• NEVER say "تم تسجيل الطلب" / "tm t2kid talab" / "Commande confirmée" unless:
-  1. You already showed the full summary in a PREVIOUS message
-  2. Customer just replied with: wah / ih / wi / oui / wakha / صح / نعم / correct / c'est bon / sah
-• Giving name/phone/address is NOT confirmation
-• "oui" choosing a color or size is NOT confirmation
-• Only the word wah/ih/oui/صح AFTER seeing the summary counts
-• If all fields just collected → show summary + ask "Koulchi sah?" — do NOT confirm yet
+French customer → ALWAYS use this French format:
+─────────────────────
+Récapitulatif de commande :
+Produit : [nom + couleur + taille] × [qté]
+Nom : [nom]
+Téléphone : [téléphone]
+Wilaya : [wilaya] — [commune]
+Adresse : [adresse]
+Livraison : [option] — [prix] DZD
+Total : [total] DZD
+Tout est correct ?
+─────────────────────
 
-AFTER CUSTOMER CONFIRMS (wah/ih/oui/صح after summary):
-Arabic: "تم تسجيل الطلب ✅ سنتاصلوا بيك قريب. نهارك زين"
-Latin:  "tm t2kid talab 🌸 nhark zin"
-French: "Commande confirmée ✅ On vous contacte bientôt. Bonne journée"\""""
+⚠️ CRITICAL ORDER FLOW — NEVER VIOLATE:
+• Show the full summary above FIRST in CUSTOMER'S LANGUAGE, then wait for confirmation
+• NEVER say the confirmation message unless:
+  1. You already showed the full summary in a PREVIOUS message
+  2. Customer just replied with a confirmation word
+• Giving name/phone/address is NOT confirmation
+• "oui/wah" choosing color/size mid-conversation is NOT confirmation
+• Only confirmation words AFTER seeing the full summary count
+
+AFTER CUSTOMER CONFIRMS — reply in customer's language:
+Arabic:  "تم تسجيل الطلب ✅ سنتواصل معك قريباً للتأكيد. نهارك زين 🌷"
+Latin:   "tm t2kid talab 🌸 nhark zin"
+French:  "Commande confirmée ✅ On vous contacte bientôt. Bonne journée 🌷"\""""
 
 SECTION_SHIPPING = """
 ━━━ SHIPPING ━━━
@@ -272,56 +275,75 @@ Tailles: L, XL, XXL
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-LATIN DARIJA — CRITICAL EXAMPLES (100% Latin replies — even with Arabic product words):
-"Hab notalb" → "mrhba 🌷 kifach nqdar n3awnk?"
-"Hab notlab جلابية" → "mrhba 🌷 kayna:
-جلابية السلطانة
-Prix: 3,500 DZD
-Colors: Bleu, Rouge, Vert
-Tailles: L, XL, XXL
-3tini loun, pointeur w kam7al?"
-"Tawsil ila telemcen" → "ih kayn tawsil l tlemcen 😊 tawsil l dar aw pickup?"
-"توصيل لدار" → (customer switches to Arabic for one word — reply stays Latin) "wah, tawsil l dar mlih. ch7al la quantité?"
+ARABIC DARIJA FULL ORDER FLOW (100% Arabic from start to finish):
+"سلام عليكم" → "وعليكم السلام 🌷 كيفاش نقدر نعاونك؟"
+"حبيت ندير طلبية" → "وي كاين، قوليلي شنو المنتج واللون والمقاس والكمية."
+"جلابية السلطانة لون أحمر مقاس L" → "مليح، تحب توصيل للدار ولا تستلم من الفرع؟"
+"للدار" → "واخا، عطيني الاسم الكامل، رقم الهاتف، الولاية والعنوان."
+"أيوب سي كبير 0653515151 تقرت كتلة 134 رقم 3" →
+─────────────────────
+تأكيد الطلب:
+• المنتج: جلابية السلطانة أحمر L × 1
+• الاسم: أيوب سي كبير
+• الهاتف: 0653515151
+• الولاية: تقرت
+• العنوان: كتلة 134 رقم 3
+• الشحن: الى البيت — 800 دج
+• المجموع: 4,300 دج
+كل شيء صح؟
+─────────────────────
+"وي صح" → "تم تسجيل الطلب ✅ سنتواصل معك قريباً للتأكيد. نهارك زين 🌷"
 
-LATIN ORDER FLOW — full example:
-Customer: "Hab notalb jalabiya"
-Agent: "mrhba 🌷 [show product in Latin format]"
-Customer: "rouge XL 1 tawsil ila telemcen"
-Agent: "mlih, 3tini smiytek kamla, numéro téléphone, w adresse."
-Customer: "Hamida Zarkawi 0660191919 cite 122 num 3"
-Agent shows summary:
+❌ NEVER for Arabic customer:
+"Takid commande: Produit jalabiya..." — WRONG, Latin format
+"tm t2kid talab ✅ nhark zin" — WRONG, Latin confirmation
+"Koulchi sah?" — WRONG, Latin question
+
+LATIN DARIJA FULL ORDER FLOW (100% Latin from start to finish):
+"Hab notalb" → "mrhba 🌷 kifach nqdar n3awnk?"
+"jalabiya rouge L" → "mlih, tawsil l dar aw pickup?"
+"l dar" → "3tini smiytek kamla, numéro téléphone, wilaya w adresse."
+"Hamida Zarkawi 0660191919 Oran cite 5 num 12" →
 ─────────────────────
 Takid commande:
-Produit: jalabiya sultaniya Rouge XL × 1
+Produit: jalabiya sultaniya Rouge L × 1
 Smiya: Hamida Zarkawi
 Téléphone: 0660191919
-Wilaya: Tlemcen
-Adresse: cite 122 num 3
-Livraison: l dar — 800 DZD
-Total: 4,300 DZD
+Wilaya: Oran
+Adresse: cite 5 num 12
+Livraison: l dar — 700 DZD
+Total: 4,200 DZD
 Koulchi sah?
 ─────────────────────
-Customer: "wah"
-Agent: "tm t2kid talab ✅ nhark zin 🌸"  ← ONLY NOW say this
+"wah" → "tm t2kid talab ✅ nhark zin 🌸"
 
-ARABIC DARIJA (100% Arabic script):
-"سلام" → "وعليكم السلام، مرحبا! كيفاش نقدر نعاونك؟"
-"حابة نطلب جلابية" → show product, ask color/size
-"شكرا" → "يعطيك الصحة 🌷 نهارك زين!"
-"التوصيل كاين لجيجل؟" → "وي كاين التوصيل لجميع 58 ولاية 🌷"
-
-FRENCH (100% French):
+FRENCH FULL ORDER FLOW (100% French from start to finish):
 "Bonjour" → "Bonjour 🌷 comment puis-je vous aider?"
-"C'est fiable?" → "Bien sûr 🌷 paiement uniquement à la livraison."
+"Je veux commander" → "Bien sûr, quel produit vous intéresse ?"
+"jalabiya rouge L" → "Parfait, livraison à domicile ou retrait en bureau ?"
+"domicile" → "D'accord, votre nom complet, téléphone, wilaya et adresse ?"
+"Sarah Bouali 0661234567 Alger Bab Ezzouar" →
+─────────────────────
+Récapitulatif de commande :
+Produit : Jalabiya Sultaniya Rouge L × 1
+Nom : Sarah Bouali
+Téléphone : 0661234567
+Wilaya : Alger
+Adresse : Bab Ezzouar
+Livraison : À domicile — 500 DZD
+Total : 4,000 DZD
+Tout est correct ?
+─────────────────────
+"Oui" → "Commande confirmée ✅ On vous contacte bientôt. Bonne journée 🌷"
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-ORDER CONFIRMED — say ONLY after wah/ih/oui/صح following full summary:
+ORDER CONFIRMED — match customer's language — NEVER switch:
 Arabic: "تم تسجيل الطلب بنجاح ✅ سنتواصل معك قريباً للتأكيد. نهارك زين 🌷"
 Latin:  "tm t2kid talab ✅ nhark zin 🌸"
 French: "Commande confirmée ✅ On vous contacte bientôt. Bonne journée 🌷"
 
-ORDER CANCELLED:
+ORDER CANCELLED — match customer's language:
 Arabic: "تم إلغاء الطلب بنجاح ✅ إذا حبيتي/حبيت تطلب مرة أخرى رانا هنا. نهارك زين 🌷"
 Latin:  "tm ilgha2 ✅ ila t7eb/t7ebi tdir/tdiri order mra okhra rana hna. nhark zin 🌸"
 French: "Commande annulée ✅ N'hésitez pas si vous souhaitez repasser une commande. Bonne journée 🌷"\""""
@@ -375,12 +397,10 @@ def detect_language_choice(text: str) -> str | None:
     if t in ("4", "english", "en", "inglizi", "4️⃣"): return "en"
     return None
 
-# FIX: helper — true if text contains Latin Darija cues (used for mixed text + lock)
 def _has_latin_darija_cues(text: str) -> bool:
     text_lower = text.lower()
     pattern = r"\b(wach|wesh|wash|ana|nta|ntia|hna|labas|bghit|bghina|3andi|3andek|3andkom|khoya|bzaf|kifash|ndirek|doka|mazal|sahbi|hab|7ab|haba|na3raf|ndir|na9der|9der|kayn|makaynch|chofli|chof|dial|had|hada|hadi|rani|raha|rah|walo|baraka|3la|3lash|fhamt|smahli|wakha|yallah|safi|barak|felous|taman|chwiya|kima|kif|feen|mneen|3lah|bach|ila|ga3|shi|mashi|mlih|nhark|mrhba|notalb|notlab|ntlab|tawsil|twsil|tawsili|twsal|o5ra|a5r|mta3|wla|slm|salam)\b"
     if re.search(pattern, text_lower): return True
-    # FIX: digit set includes 5 — o5ra, 5ali are common Latin Darija
     if re.search(r'[397825]', text): return True
     return False
 
@@ -388,10 +408,8 @@ def is_language_uncertain(text: str) -> bool:
     text_lower = text.lower().strip()
     words = text_lower.split()
     if len(words) <= 1: return True
-    # FIX: expanded with hab/notalb/notlab/tawsil/ila/haba/o5ra
     darija_pattern = r"\b(wach|wesh|3andi|3andek|3andkom|kifash|kifach|labas|bghit|na9der|9der|kayn|rani|chno|9oli|nqdar|n3awnk|safi|wakha|yallah|bzaf|sahbi|a5i|a7i|zin|mlih|hab|7ab|haba|notalb|notlab|ntlab|tawsil|twsil|tawsili|ila|wla|o5ra|a5r|mta3|dial)\b"
     if re.search(darija_pattern, text_lower): return False
-    # FIX: digit set includes 5
     if re.search(r'[397825]', text): return False
     if len(re.findall(r'[\u0600-\u06FF]', text)) > 2: return False
     if len(words) <= 2: return True
@@ -400,18 +418,15 @@ def is_language_uncertain(text: str) -> bool:
 def detect_language(text: str, locked_language: str | None) -> str:
     text_lower = text.lower().strip()
 
-    # FIX: expanded darija_words — hab, notalb, notlab, tawsil, ila, haba, o5ra added
     darija_words = r"\b(wach|wesh|wash|ana|nta|ntia|la3ziz|hna|labas|bghit|bghina|3andi|3andek|3andkom|khoya|bzaf|kifash|ndirek|doka|mazal|sahbi|hab|7ab|haba|na3raf|ndir|na9der|9der|kayn|makaynch|chofli|chof|dial|had|hada|hadi|rani|raha|rah|walo|baraka|3la|3lash|fhamt|smahli|wakha|yallah|safi|barak|felous|taman|chwiya|kima|kif|feen|mneen|3lah|bach|ila|ga3|shi|mashi|lhih|mlih|nhark|mrhba|notalb|notlab|ntlab|tawsil|twsil|tawsili|twsal|o5ra|a5r|mta3|wla|slm|salam)\b"
     if re.search(darija_words, text_lower): return "ar-latin"
 
-    # FIX: digit set includes 5
     if bool(re.search(r'[397825]', text)) and len(text.split()) <= 6: return "ar-latin"
 
-    # FIX: mixed text — Arabic chars present BUT Latin Darija cues also present → ar-latin
     arabic_char_count = len(re.findall(r'[\u0600-\u06FF]', text))
     if arabic_char_count > 2:
         if _has_latin_darija_cues(text):
-            return "ar-latin"   # "Hab notlab جلابية" → ar-latin ✅
+            return "ar-latin"
         return "ar"
 
     french_words = r"\b(bonjour|merci|oui|non|je|tu|il|nous|vous|est|les|des|une|pour|avec|sur|dans|que|qui|comment|quel|parle|veux|voulez|pouvez|disponible|avez|avoir|salut|bonsoir|produit|commande|annuler|livraison)\b"
@@ -524,8 +539,8 @@ def build_prompt(
     lang_instructions = {
         "fr": "Réponds UNIQUEMENT en français — professionnel et chaleureux. ZERO mots arabes ou latins.",
         "en": "Reply ONLY in English — professional and warm. ZERO Arabic or Darija.",
-        "ar": "أجب بالدارجة الجزائرية بالخط العربي فقط. ZERO كلمات لاتينية أو فرنسية في ردك.",
-        "ar-latin": "Reply ONLY in Algerian Darija Latin script. ZERO Arabic script in your reply. Even if customer includes an Arabic product name, your reply must be 100% Latin.",
+        "ar": "أجب بالدارجة الجزائرية بالخط العربي فقط. ZERO كلمات لاتينية أو فرنسية في ردك. حتى ملخص الطلب والتأكيد لازم يكونوا بالعربية فقط.",
+        "ar-latin": "Reply ONLY in Algerian Darija Latin script. ZERO Arabic script in your reply. Even if customer includes an Arabic product name, your reply must be 100% Latin. Order summary and confirmation must also be 100% Latin.",
     }
     lang_rule = lang_instructions.get(language, lang_instructions["ar"])
 
@@ -539,17 +554,17 @@ def build_prompt(
 
     flow_note = ""
     if ai_flow_state == "order_created":
-        flow_note = "\nNOTE: Order just created — confirm briefly and warmly."
+        flow_note = "\nNOTE: Order just created — confirm briefly and warmly in customer's language."
     elif ai_flow_state == "order_cancelled":
-        flow_note = "\nNOTE: Order just cancelled — acknowledge and offer further help."
+        flow_note = "\nNOTE: Order just cancelled — acknowledge and offer further help in customer's language."
     elif ai_flow_state == "pending_cancel_choice":
         flow_note = "\nNOTE: Awaiting customer to select which order to cancel."
 
     gender_note = ""
     if customer_gender == "female":
-        gender_note = "\nCUSTOMER IS FEMALE — use feminine: raki, diri, te9dri, 7abba, راكي, ديري, حبيتي"
+        gender_note = "\nCUSTOMER IS FEMALE — use feminine: raki, diri, te9dri, 7abba, راكي, ديري, حبيتي, تحبي, تديري"
     elif customer_gender == "male":
-        gender_note = "\nCUSTOMER IS MALE — use masculine: rak, dir, te9dar, 7ab, راك, دير, حبيت"
+        gender_note = "\nCUSTOMER IS MALE — use masculine: rak, dir, te9dar, 7ab, راك, دير, حبيت, تحب, تدير"
 
     store_instructions = ("STORE-SPECIFIC INSTRUCTIONS:\n" + ai_system_prompt if ai_system_prompt else "")
 
@@ -633,6 +648,7 @@ def detect_gender_from_name(name: str | None) -> str | None:
         "ghiles","hakim","hamid","hani","haroun","hassane","hassen","hocine","houssem",
         "houari","ibrahim","idris","ilyess","imad","imed","ishak","ismail","islem",
         "jawed","jawher","jawad","khaled","khalil","lakhdar","moussa","mounir","mohand",
+        "ayoub","si",
     }
     if first in female_names: return "female"
     if first in male_names: return "male"
@@ -670,48 +686,58 @@ Schema:
 }
 
 Rules:
-- canAutoCreate = true ONLY when ALL of these are present AND customer explicitly confirmed:
-  * customerName — accept ANY 2-word combination. "Hamida zarkawi" ✅ "حمروني عائشة" ✅ "Sara B" ✅
-  * NEVER reject a name with 2+ words. Do NOT ask again if 2 words given.
+- canAutoCreate = true ONLY when ALL present AND customer explicitly confirmed:
+  * customerName — accept ANY 2-word combination. "Hamida zarkawi" ✅ "حمروني عائشة" ✅ "Ayoub Si Kbir" ✅
+  * NEVER reject a name with 2+ words.
   * customerPhone — accept 9 OR 10 digits. Count digits only, ignore spaces/dashes.
-    "0661282828" ✅ "0660191919" ✅ "0662171716" ✅ "661282828" ✅
+    "0661282828" ✅ "0660191919" ✅ "0653515151" ✅ "661282828" ✅
     REJECT only if fewer than 9 digits: "30811882" ❌
-  * wilaya — valid Algerian wilaya name
+  * wilaya — extract as the official French wilaya name (e.g. "Touggourt" not "تقرت", "Oran" not "وهران")
+    Arabic wilaya → convert to French: تقرت→Touggourt | الجزائر→Alger | وهران→Oran | قسنطينة→Constantine |
+    عنابة→Annaba | سطيف→Sétif | تلمسان→Tlemcen | باتنة→Batna | بسكرة→Biskra | البليدة→Blida |
+    بجاية→Béjaïa | تيزي وزو→Tizi Ouzou | ورقلة→Ouargla | غرداية→Ghardaïa | الأغواط→Laghouat |
+    الجلفة→Djelfa | المدية→Médéa | البويرة→Bouira | بومرداس→Boumerdès | تيبازة→Tipaza |
+    مستغانم→Mostaganem | الشلف→Chlef | تيارت→Tiaret | بشار→Béchar | تمنراست→Tamanrasset |
+    خنشلة→Khenchela | سوق أهراس→Souk Ahras | تبسة→Tébessa | أم البواقي→Oum El Bouaghi |
+    برج بوعريريج→Bordj Bou Arréridj | ميلة→Mila | جيجل→Jijel | سكيكدة→Skikda | قالمة→Guelma |
+    الطارف→El Tarf | الوادي→El Oued | أولاد جلال→Ouled Djellal | سيدي بلعباس→Sidi Bel Abbès |
+    معسكر→Mascara | سعيدة→Saïda | النعامة→Naâma | البيض→El Bayadh | أدرار→Adrar |
+    إليزي→Illizi | تندوف→Tindouf | عين الدفلى→Aïn Defla | عين تموشنت→Aïn Témouchent | غليزان→Relizane
   * items — not empty, productName not null, quantity >= 1
+  * variant — CRITICAL: use the EXACT variant name from the product catalog as shown to the customer.
+    Do NOT translate colors or sizes. If product catalog has "أحمر" and customer says "احمر" → extract "أحمر".
+    If product catalog has "Rouge" and customer says "rouge" → extract "Rouge".
+    Combine color and size: "أحمر L" → variant: "أحمر - L"
+    Never invent variant names not in the product catalog.
   * shippingOption — stated or implied by customer
 
   ⚠️ CONFIRMATION IS MANDATORY AND STRICT:
-  * canAutoCreate = true ONLY when the customer's LAST message is a confirmation word
-  * AND the agent's previous message contained a full order summary with total price
-  * Valid confirmation: oui / wah / ih / wi / wakha / صح / نعم / correct / c'est bon / cbon / sah / koulchi sah / ok / okay
+  * canAutoCreate = true ONLY when customer's LAST message is a confirmation word
+  * AND agent's previous message contained a full order summary with total price
+  * Valid confirmation: oui / wah / ih / wi / wakha / صح / نعم / correct / c'est bon / sah / ok / okay / وي / إيه
   * Providing name, phone, or address = NOT confirmation
-  * "oui" choosing a color, size, or shipping option mid-conversation = NOT confirmation
-  * If agent never showed a summary → canAutoCreate = false regardless
-  * If last customer message is giving information (name/phone/address) → canAutoCreate = false
+  * "oui/wah" choosing color, size, or shipping = NOT confirmation
+  * If agent never showed a summary → canAutoCreate = false
+  * Last customer message giving information → canAutoCreate = false
 
-  * shippingOption = "home_delivery" if customer says any of:
-    à domicile / a domicile / domicile / livraison / chez moi / dar / البيت / لدار / توصيل /
-    l dar / للدار / home / للبيت / au domicile / tawsil / tawsil l dar / tawsili / twsal /
-    twsil / livrer chez moi / عندي / livrason
+  * shippingOption = "home_delivery" if customer says:
+    à domicile / domicile / livraison / chez moi / البيت / للدار / توصيل / l dar / للبيت /
+    tawsil / tawsil l dar / tawsili / twsal / home / لدار / عندي / للدار
   * shippingOption = "pickup" ONLY if: pickup / من الفرع / bureau / point relais / retrait
 
-  * Phone number change after order created → reject, refer to support
   * Accept multiple fields at once — ask only for remaining missing ones
-  * If phone 9-10 digits → accept, do NOT ask again
-  * If name 2+ words → accept, do NOT ask again
+  * Phone 9-10 digits → accept, do NOT ask again
+  * Name 2+ words → accept, do NOT ask again
 
 - canAutoUpdate = true ONLY when order exists and customer requests change to shipping/address/wilaya (not phone)
 
-STRICT VALIDATION EXAMPLES:
+STRICT VALIDATION:
 - Phone "30811882" (8 digits) → REJECT ❌
-- Phone "0662171716" (10 digits) → ACCEPT ✅
-- Phone "661234567" (9 digits) → ACCEPT ✅
-- Name "أمينة" (1 word) → REJECT ❌
-- Name "حمروني عائشة" (2 words) → ACCEPT ✅
-- Last customer msg is "الاسم حمروني عائشة رقم الهاتف 0662171716" → canAutoCreate = false (providing info, not confirming)
-- Last customer msg is "wah" AFTER agent showed full summary → canAutoCreate = true ✅
+- Phone "0653515151" (10 digits) → ACCEPT ✅
+- Name "أيوب سي كبير" (3 words) → ACCEPT ✅
+- Last customer msg giving info → canAutoCreate = false
+- Last customer msg "وي صح" / "wah" / "oui" AFTER full summary → canAutoCreate = true ✅
 - baladiya and address OPTIONAL — do not block canAutoCreate if missing
-- Extract variant: "Rouge taille XL" → "Rouge - XL"
 - cancelPhone: extract when customer wants to cancel
 - For product_inquiry/other: orderData = null"""
 
@@ -729,8 +755,10 @@ async def extract_order(history: list, products: list) -> dict:
 
     price_ref = ""
     if products:
-        price_ref = "\n\nPRODUCT PRICES:\n" + "\n".join(
-            f"- {p.name}: {float(p.price):,.0f} DZD" for p in products
+        price_ref = "\n\nPRODUCT PRICES AND EXACT VARIANT NAMES:\n" + "\n".join(
+            f"- {p.name}: {float(p.price):,.0f} DZD" + (
+                f" | variants: {p.variants}" if getattr(p, 'variants', None) else ""
+            ) for p in products
         )
 
     messages = [{"role": "system", "content": EXTRACTION_PROMPT + price_ref}]
@@ -771,7 +799,6 @@ async def process_message(request) -> dict:
         language = detect_language(last_customer_msg, locked)
         word_count = len(last_customer_msg.strip().split())
         if locked and not chosen_language:
-            # FIX: if locked is ar-latin and message has any Latin cues, keep ar-latin
             if locked == "ar-latin" and _has_latin_darija_cues(last_customer_msg):
                 language = "ar-latin"
             elif word_count <= 5 or language == locked:
