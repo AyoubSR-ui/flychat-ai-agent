@@ -487,12 +487,17 @@ def build_shipping_section(shipping_options: dict | None) -> str:
         if isinstance(prices, dict):
             home_price = prices.get("home", 0)
             pickup_price = prices.get("pickup", 0)
-            if home_enabled and pickup_enabled:
+            wilaya_home_on = prices.get("homeEnabled", True)
+            wilaya_pickup_on = prices.get("pickupEnabled", True)
+            show_home = home_enabled and wilaya_home_on
+            show_pickup = pickup_enabled and wilaya_pickup_on
+            if show_home and show_pickup:
                 price_lines.append(f"  {wilaya}: {home_label}={home_price} DZD | {pickup_label}={pickup_price} DZD")
-            elif home_enabled:
-                price_lines.append(f"  {wilaya}: {home_price} DZD")
-            elif pickup_enabled:
-                price_lines.append(f"  {wilaya}: {pickup_price} DZD")
+            elif show_home:
+                price_lines.append(f"  {wilaya}: {home_label}={home_price} DZD")
+            elif show_pickup:
+                price_lines.append(f"  {wilaya}: {pickup_label}={pickup_price} DZD")
+            # If both disabled for this wilaya, skip it entirely
 
     price_table = "\n".join(price_lines) if price_lines else "Prix standard selon wilaya."
 
