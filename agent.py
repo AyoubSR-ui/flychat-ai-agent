@@ -483,6 +483,7 @@ def build_shipping_section(shipping_options: dict | None) -> str:
     wilaya_prices = shipping_options.get("wilayaPrices", {})
 
     price_lines = []
+    unavailable_wilayas = []
     for wilaya, prices in wilaya_prices.items():
         if isinstance(prices, dict):
             home_price = prices.get("home", 0)
@@ -497,9 +498,14 @@ def build_shipping_section(shipping_options: dict | None) -> str:
                 price_lines.append(f"  {wilaya}: {home_label}={home_price} DZD")
             elif show_pickup:
                 price_lines.append(f"  {wilaya}: {pickup_label}={pickup_price} DZD")
-            # If both disabled for this wilaya, skip it entirely
+            else:
+                unavailable_wilayas.append(wilaya)
 
     price_table = "\n".join(price_lines) if price_lines else "Prix standard selon wilaya."
+    unavailable_section = (
+        "\n\nNOT AVAILABLE wilayas (do not accept orders for these): " + ", ".join(unavailable_wilayas)
+        if unavailable_wilayas else ""
+    )
 
     if home_enabled and pickup_enabled:
         return (
@@ -507,22 +513,43 @@ def build_shipping_section(shipping_options: dict | None) -> str:
             "1. " + home_label + " (Home Delivery)\n"
             "2. " + pickup_label + " (Pickup from Branch)\n"
             "Ask customer which they prefer BEFORE showing order summary.\n\n"
-            "PRICES PER WILAYA (home | pickup):\n" + price_table + "\n\n"
+            "PRICES PER WILAYA (home | pickup):\n" + price_table
+            + unavailable_section + "\n\n"
             "USAGE: When customer mentions wilaya, look up price above and include in order summary."
         )
     elif home_enabled:
         return (
             "SHIPPING: " + home_label + " only.\n\n"
-            "PRICES PER WILAYA:\n" + price_table + "\n\n"
+            "PRICES PER WILAYA:\n" + price_table
+            + unavailable_section + "\n\n"
             "USAGE: When customer mentions wilaya, look up price above."
         )
     elif pickup_enabled:
         return (
             "SHIPPING: " + pickup_label + " only.\n\n"
-            "PRICES PER WILAYA:\n" + price_table + "\n\n"
+            "PRICES PER WILAYA:\n" + price_table
+            + unavailable_section + "\n\n"
             "USAGE: When customer mentions wilaya, look up price above."
         )
     return "Ask customer for delivery preference."
+
+
+def get_unavailable_wilayas(shipping_options: dict | None) -> list[str]:
+    """Return list of wilayas where both home delivery and pickup are disabled."""
+    if not shipping_options:
+        return []
+    home_enabled = shipping_options.get("homeDeliveryEnabled", True)
+    pickup_enabled = shipping_options.get("pickupEnabled", False)
+    wilaya_prices = shipping_options.get("wilayaPrices", {})
+    result = []
+    for wilaya, prices in wilaya_prices.items():
+        if not isinstance(prices, dict):
+            continue
+        show_home = home_enabled and prices.get("homeEnabled", True)
+        show_pickup = pickup_enabled and prices.get("pickupEnabled", True)
+        if not show_home and not show_pickup:
+            result.append(wilaya)
+    return result
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # SELECTIVE PROMPT BUILDER
@@ -744,13 +771,20 @@ STRICT VALIDATION:
 - Last customer msg "وي صح" / "wah" / "oui" AFTER full summary → canAutoCreate = true ✅
 - baladiya and address OPTIONAL — do not block canAutoCreate if missing
 - cancelPhone: extract when customer wants to cancel
-- For product_inquiry/other: orderData = null"""
+- For product_inquiry/other: orderData = null
+
+UNAVAILABLE WILAYAS RULE:
+- If the system context lists "NOT AVAILABLE wilayas", and the customer's wilaya matches one of them → canAutoCreate = false.
+- The agent reply must tell the customer delivery is not available for their wilaya.
+  Darija: "سمحلي، التوصيل ما كانش لولاية [wilaya]. نوصلو غير للولايات المتاحة."
+  Latin:  "smahli, tawsil makanch l [wilaya]. nwaslo ghir l wilayas available."
+  French: "Désolé, la livraison n'est pas disponible pour [wilaya]. Nous livrons uniquement dans les wilayas disponibles." """
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # EXTRACT ORDER
 # ═══════════════════════════════════════════════════════════════════════════════
 
-async def extract_order(history: list, products: list) -> dict:
+async def extract_order(history: list, products: list, unavailable_wilayas: list[str] | None = None) -> dict:
     last_customer = next(
         (m.content for m in reversed(history) if m.role == "customer"), ""
     )
@@ -765,6 +799,8 @@ async def extract_order(history: list, products: list) -> dict:
                 f" | variants: {p.variants}" if getattr(p, 'variants', None) else ""
             ) for p in products
         )
+    if unavailable_wilayas:
+        price_ref += "\n\nNOT AVAILABLE wilayas (do not accept orders for these): " + ", ".join(unavailable_wilayas)
 
     messages = [{"role": "system", "content": EXTRACTION_PROMPT + price_ref}]
     for m in history[-15:]:
@@ -880,7 +916,9 @@ async def process_message(request) -> dict:
 
     # ── Build context ─────────────────────────────────────────────────────────
     product_catalog = build_product_catalog(request.products, language)
-    shipping_section = build_shipping_section(getattr(request, 'shippingOptions', None))
+    shipping_opts = getattr(request, 'shippingOptions', None)
+    shipping_section = build_shipping_section(shipping_opts)
+    unavailable_wilayas = get_unavailable_wilayas(shipping_opts)
 
     if recent_orders := getattr(request, 'recentOrders', []):
         orders_context = "\n".join([
@@ -932,7 +970,7 @@ async def process_message(request) -> dict:
                 reply = "سمحلي، ممكن تعاود وش قتلي "
 
     # ── Order extraction ──────────────────────────────────────────────────────
-    extraction = await extract_order(history, request.products)
+    extraction = await extract_order(history, request.products, unavailable_wilayas)
     action = {"type": "none"}
 
     if extraction.get("canAutoCreate") and extraction.get("orderData"):
