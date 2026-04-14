@@ -51,6 +51,8 @@ class ChatRequest(BaseModel):
     aiFlowState: Optional[str] = None
     detectedLanguage: Optional[str] = None
     shippingOptions: Optional[dict] = None
+    imageUrl: Optional[str] = None
+    imageAccessToken: Optional[str] = None
 
 
 class OrderItem(BaseModel):

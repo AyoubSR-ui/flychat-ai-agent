@@ -1,6 +1,8 @@
 import os
 import json
 import re
+import base64
+import aiohttp
 from typing import Never
 from openai import AsyncOpenAI
 from lingua import Language, LanguageDetectorBuilder
@@ -11,6 +13,63 @@ LANGUAGE_CHOICE_TRIGGER = "kifach thibbs ntkallam m3ak? / بأي لغة تحب �
 
 # ─── OpenAI Client ────────────────────────────────────────────────────────────
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# ─── Image Analysis (gpt-4o Vision) ──────────────────────────────────────────
+async def analyze_image_with_gpt4o(image_url: str, access_token: str = None) -> str:
+    """Download image, encode to base64, and use gpt-4o to describe it."""
+    try:
+        headers = {}
+        if access_token:
+            headers["Authorization"] = f"Bearer {access_token}"
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(image_url, headers=headers) as resp:
+                if not resp.ok:
+                    return "[Image could not be loaded]"
+                image_data = await resp.read()
+                content_type = resp.headers.get("Content-Type", "image/jpeg")
+
+        base64_image = base64.b64encode(image_data).decode("utf-8")
+
+        response = await client.chat.completions.create(
+            model="gpt-4o",
+            max_tokens=200,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:{content_type};base64,{base64_image}",
+                                "detail": "low",
+                            },
+                        },
+                        {
+                            "type": "text",
+                            "text": (
+                                "You are analyzing a customer image in an Algerian COD e-commerce chat.\n"
+                                "Extract relevant info in 1-2 sentences. Focus on:\n"
+                                "- Product name, color, size if it's a product photo\n"
+                                "- Address or location text if visible\n"
+                                "- Order number or receipt details\n"
+                                "- What the customer seems to be asking about\n"
+                                "Reply in the same language as text in the image (Arabic/French/Latin Darija).\n"
+                                "Be concise — this will be passed to another AI to answer."
+                            ),
+                        },
+                    ],
+                }
+            ],
+        )
+
+        description = response.choices[0].message.content.strip()
+        print(f"[Vision] gpt-4o analyzed image: {description[:100]}")
+        return f"[Customer sent image: {description}]"
+
+    except Exception as e:
+        print(f"[Vision] gpt-4o analysis failed: {e}")
+        return "[Customer sent an image — could not analyze]"
 
 _detector = None
 
@@ -152,7 +211,14 @@ CULTURAL CONTEXT:
 • "sahbi/a5i/khoya" = friend/brother — casual address
 • "pointeur" = clothing size
 • "tdaf3 3and lwast/عند الاستلام" = COD payment
-• "machi arnaque" = not a scam — reassure with COD\""""
+• "machi arnaque" = not a scam — reassure with COD
+
+IMAGE MESSAGES:
+• "[Customer sent image: ...]" means the customer sent a photo analyzed by vision AI
+• Respond naturally to the image content — never say "I can see an image" or "I received an image"
+• If it shows a product → offer similar products from the catalog
+• If it shows an address or location → use it for the order delivery field
+• If it shows an order receipt or number → look it up in recent orders\""""
 
 SECTION_PRODUCTS = """
 ━━━ STORE PRODUCTS ━━━
@@ -827,6 +893,23 @@ async def extract_order(history: list, products: list, unavailable_wilayas: list
 
 async def process_message(request) -> dict:
     history = request.history
+
+    # ── Image pre-processing: analyze with gpt-4o, inject into history ────────
+    image_url = getattr(request, 'imageUrl', None)
+    if image_url:
+        image_description = await analyze_image_with_gpt4o(
+            image_url,
+            getattr(request, 'imageAccessToken', None)
+        )
+        if image_description:
+            last_customer = next((m for m in reversed(history) if m.role == "customer"), None)
+            if last_customer:
+                last_customer.content = (last_customer.content + "\n" + image_description).strip()
+            else:
+                from types import SimpleNamespace
+                history.append(SimpleNamespace(role="customer", content=image_description))
+            print(f"[Agent] Image pre-processed by gpt-4o, passing to gpt-4.1-mini")
+
     last_customer_msg = next(
         (m.content for m in reversed(history) if m.role == "customer"), ""
     )
