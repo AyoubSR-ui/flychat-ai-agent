@@ -330,7 +330,12 @@ IMAGE MESSAGES:
   Present that product immediately with price and available variants/colors.
   Do NOT ask what product they want — you already know. Start the order flow directly.
 • [Customer sent image: ...] → customer sent an image analyzed by Vision AI.
-  Respond naturally based on the description. Never mention "image" or "photo" explicitly.\""""
+  Respond naturally based on the description. Never mention "image" or "photo" explicitly.
+
+RETURN POLICY:
+• Retour price is the cost charged if a delivered package is returned (customer refuses delivery).
+• Only mention retour price if the customer asks about returns, refunds, or refusal.
+• Do NOT include retour price in the order total or summary.\""""
 
 SECTION_SHIPPING = """
 ━━━ SHIPPING ━━━
@@ -586,16 +591,18 @@ def build_shipping_section(shipping_options: dict | None) -> str:
         if isinstance(prices, dict):
             home_price = prices.get("home", 0)
             pickup_price = prices.get("pickup", 0)
+            retour_price = prices.get("retour", 200)
             wilaya_home_on = prices.get("homeEnabled", True)
             wilaya_pickup_on = prices.get("pickupEnabled", True)
             show_home = home_enabled and wilaya_home_on
             show_pickup = pickup_enabled and wilaya_pickup_on
+            retour_part = f" | retour={retour_price} DZD" if retour_price else ""
             if show_home and show_pickup:
-                price_lines.append(f"  {wilaya}: {home_label}={home_price} DZD | {pickup_label}={pickup_price} DZD")
+                price_lines.append(f"  {wilaya}: {home_label}={home_price} DZD | {pickup_label}={pickup_price} DZD{retour_part}")
             elif show_home:
-                price_lines.append(f"  {wilaya}: {home_label}={home_price} DZD")
+                price_lines.append(f"  {wilaya}: {home_label}={home_price} DZD{retour_part}")
             elif show_pickup:
-                price_lines.append(f"  {wilaya}: {pickup_label}={pickup_price} DZD")
+                price_lines.append(f"  {wilaya}: {pickup_label}={pickup_price} DZD{retour_part}")
             else:
                 unavailable_wilayas.append(wilaya)
 
