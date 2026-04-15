@@ -15,8 +15,34 @@ LANGUAGE_CHOICE_TRIGGER = "kifach thibbs ntkallam m3ak? / بأي لغة تحب �
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # ─── Image Analysis (gpt-4o Vision) ──────────────────────────────────────────
-async def analyze_image_with_gpt4o(image_url: str, access_token: str = None) -> str:
-    """Download image, encode to base64, and use gpt-4o to describe it."""
+async def resolve_image(image_url: str, products: list, access_token: str = None) -> str:
+    """
+    Smart image resolver:
+    1. Check if image URL matches a known product in catalog (free, instant)
+    2. If not found → use gpt-4o Vision as fallback (paid, ~0.3s)
+    """
+    from urllib.parse import urlparse
+
+    # ── Step 1: DB catalog match ──────────────────────────────────────────────
+    if image_url and products:
+        for product in products:
+            product_image = getattr(product, 'imageUrl', None)
+            if not product_image:
+                continue
+            if product_image == image_url:
+                print(f"[Image] DB match: {product.name}")
+                return f"[Customer is asking about: {product.name} — {float(product.price):,.0f} DZD]"
+            try:
+                url_path = urlparse(image_url).path
+                product_path = urlparse(product_image).path
+                if url_path and product_path and url_path == product_path:
+                    print(f"[Image] DB partial match: {product.name}")
+                    return f"[Customer is asking about: {product.name} — {float(product.price):,.0f} DZD]"
+            except Exception:
+                pass
+
+    # ── Step 2: gpt-4o Vision fallback ───────────────────────────────────────
+    print(f"[Image] No DB match — calling gpt-4o Vision")
     try:
         headers = {}
         if access_token:
@@ -25,15 +51,16 @@ async def analyze_image_with_gpt4o(image_url: str, access_token: str = None) -> 
         async with aiohttp.ClientSession() as session:
             async with session.get(image_url, headers=headers) as resp:
                 if not resp.ok:
-                    return "[Image could not be loaded]"
+                    return "[Customer sent an image — could not load]"
                 image_data = await resp.read()
                 content_type = resp.headers.get("Content-Type", "image/jpeg")
 
         base64_image = base64.b64encode(image_data).decode("utf-8")
+        product_names = ", ".join([p.name for p in products[:10]]) if products else "unknown"
 
         response = await client.chat.completions.create(
             model="gpt-4o",
-            max_tokens=200,
+            max_tokens=150,
             messages=[
                 {
                     "role": "user",
@@ -48,14 +75,12 @@ async def analyze_image_with_gpt4o(image_url: str, access_token: str = None) -> 
                         {
                             "type": "text",
                             "text": (
-                                "You are analyzing a customer image in an Algerian COD e-commerce chat.\n"
-                                "Extract relevant info in 1-2 sentences. Focus on:\n"
-                                "- Product name, color, size if it's a product photo\n"
-                                "- Address or location text if visible\n"
-                                "- Order number or receipt details\n"
-                                "- What the customer seems to be asking about\n"
-                                "Reply in the same language as text in the image (Arabic/French/Latin Darija).\n"
-                                "Be concise — this will be passed to another AI to answer."
+                                f"Analyze this image from an Algerian COD e-commerce customer chat.\n"
+                                f"Our product catalog includes: {product_names}\n\n"
+                                "If the image shows one of our products or something similar, identify it.\n"
+                                "Otherwise describe what you see in 1-2 sentences.\n"
+                                "Focus on: product type, color, size, or what customer seems to want.\n"
+                                "Reply in Arabic Darija or French matching any text visible."
                             ),
                         },
                     ],
@@ -64,11 +89,11 @@ async def analyze_image_with_gpt4o(image_url: str, access_token: str = None) -> 
         )
 
         description = response.choices[0].message.content.strip()
-        print(f"[Vision] gpt-4o analyzed image: {description[:100]}")
+        print(f"[Image] gpt-4o result: {description[:100]}")
         return f"[Customer sent image: {description}]"
 
     except Exception as e:
-        print(f"[Vision] gpt-4o analysis failed: {e}")
+        print(f"[Image] gpt-4o Vision failed: {e}")
         return "[Customer sent an image — could not analyze]"
 
 _detector = None
@@ -298,7 +323,14 @@ Tout est correct ?
 AFTER CUSTOMER CONFIRMS — reply in customer's language:
 Arabic:  "تم تسجيل الطلب ✅ سنتواصل معك قريباً للتأكيد. نهارك زين 🌷"
 Latin:   "tm t2kid talab 🌸 nhark zin"
-French:  "Commande confirmée ✅ On vous contacte bientôt. Bonne journée 🌷"\""""
+French:  "Commande confirmée ✅ On vous contacte bientôt. Bonne journée 🌷"
+
+IMAGE MESSAGES:
+• [Customer is asking about: X — Y DZD] → customer sent photo of product X from our catalog.
+  Present that product immediately with price and available variants/colors.
+  Do NOT ask what product they want — you already know. Start the order flow directly.
+• [Customer sent image: ...] → customer sent an image analyzed by Vision AI.
+  Respond naturally based on the description. Never mention "image" or "photo" explicitly.\""""
 
 SECTION_SHIPPING = """
 ━━━ SHIPPING ━━━
@@ -894,12 +926,13 @@ async def extract_order(history: list, products: list, unavailable_wilayas: list
 async def process_message(request) -> dict:
     history = request.history
 
-    # ── Image pre-processing: analyze with gpt-4o, inject into history ────────
+    # ── Image pre-processing: DB match first, gpt-4o Vision as fallback ─────
     image_url = getattr(request, 'imageUrl', None)
     if image_url:
-        image_description = await analyze_image_with_gpt4o(
-            image_url,
-            getattr(request, 'imageAccessToken', None)
+        image_description = await resolve_image(
+            image_url=image_url,
+            products=request.products,
+            access_token=getattr(request, 'imageAccessToken', None)
         )
         if image_description:
             last_customer = next((m for m in reversed(history) if m.role == "customer"), None)
@@ -908,7 +941,7 @@ async def process_message(request) -> dict:
             else:
                 from types import SimpleNamespace
                 history.append(SimpleNamespace(role="customer", content=image_description))
-            print(f"[Agent] Image pre-processed by gpt-4o, passing to gpt-4.1-mini")
+            print(f"[Agent] Image resolved: {image_description[:80]}")
 
     last_customer_msg = next(
         (m.content for m in reversed(history) if m.role == "customer"), ""
