@@ -7,6 +7,15 @@ from typing import Never
 from openai import AsyncOpenAI
 from lingua import Language, LanguageDetectorBuilder
 
+# ─── Communication Optimizer (optional — fails safe if not present) ───────────
+try:
+    from communication_optimizer import get_behavior_improvement_layer
+    OPTIMIZER_AVAILABLE = True
+except ImportError:
+    OPTIMIZER_AVAILABLE = False
+    def get_behavior_improvement_layer(store_id=None, context=None) -> str:
+        return ""
+
 # ─── Language Choice Prompt ───────────────────────────────────────────────────
 LANGUAGE_CHOICE_PROMPT = "1️⃣ 🇩🇿 Darija\n2️⃣ دارجة\n3️⃣ 🇫🇷 Français\n4️⃣ 🇬🇧 English"
 LANGUAGE_CHOICE_TRIGGER = "kifach thibbs ntkallam m3ak? / بأي لغة تحب نتكلمو؟\n\n" + LANGUAGE_CHOICE_PROMPT
@@ -883,6 +892,15 @@ def build_prompt(
 
     return "\n".join(sections).strip()
 
+
+def get_improvement_layer(store_id: str | None) -> str:
+    """
+    Returns the approved communication improvement layer for this store.
+    Wrapper kept here so build_prompt callers don't import optimizer directly.
+    Returns empty string when no approved improvements exist (always safe).
+    """
+    return get_behavior_improvement_layer(store_id=store_id, context=None)
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # GENDER DETECTION FROM NAME
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1275,6 +1293,11 @@ async def process_message(request) -> dict:
         intent_level=intent_level,
         customer_type=customer_type,
     )
+
+    # ── Inject approved improvement layer (safe — empty string if none) ──────
+    improvement_layer = get_improvement_layer(getattr(request, 'storeId', None) or store_v2.get('id'))
+    if improvement_layer:
+        system_prompt = system_prompt + "\n" + improvement_layer
 
     # ── AI reply with auto-retry ──────────────────────────────────────────────
     openai_messages = [{"role": "system", "content": system_prompt}]

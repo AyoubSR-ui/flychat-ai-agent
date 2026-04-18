@@ -1,9 +1,15 @@
-from fastapi import FastAPI, HTTPException, Header
+from fastapi import FastAPI, HTTPException, Header, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 import os
 from agent import process_message
+from communication_optimizer import (
+    run_optimization_pipeline,
+    approve_improvements,
+    get_optimizer_status,
+    get_behavior_improvement_layer,
+)
 
 app = FastAPI(title="FlyChat AI Agent", version="1.0.0")
 
@@ -107,9 +113,43 @@ class ChatResponse(BaseModel):
 def health():
     return {
         "status": "ok",
-        "version": "selective-context-v3-retry",
-        "updated": "2026-04-11"
+        "version": "selective-context-v4-optimizer",
+        "updated": "2026-04-18",
     }
+
+
+# ─── Communication Optimizer Endpoints ───────────────────────────────────────
+
+@app.post("/optimize")
+async def trigger_optimization(request: dict):
+    """
+    Triggered from FlyChat dashboard or on schedule.
+    Receives filtered conversation data from the Node.js backend.
+    Runs analysis pipeline, saves output as pending_approval.
+    """
+    conversations = request.get("conversations", [])
+    store_id = request.get("storeId")
+    auto_approve = request.get("autoApprove", False)
+
+    if not conversations:
+        return {"error": "No conversation data provided"}
+
+    result = run_optimization_pipeline(conversations, store_id, auto_approve)
+    return {"status": "complete", "result": result}
+
+
+@app.post("/optimize/approve")
+async def approve_endpoint(request: dict):
+    """Called from dashboard when owner approves improvements."""
+    store_id = request.get("storeId")
+    success = approve_improvements(store_id)
+    return {"approved": success}
+
+
+@app.get("/optimize/status")
+async def optimizer_status_endpoint(storeId: Optional[str] = Query(default=None)):
+    """Returns optimizer status for dashboard display."""
+    return get_optimizer_status(storeId)
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(
