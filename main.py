@@ -26,9 +26,10 @@ class Product(BaseModel):
     id: str
     name: str
     price: float
-    stock: int
+    stock: Optional[int] = None
     variants: Optional[list] = None
     imageUrl: Optional[str] = None
+    images: Optional[list[str]] = None   # v2: array of image URLs
     description: Optional[str] = None
 
 
@@ -40,14 +41,36 @@ class RecentOrder(BaseModel):
     customerPhone: Optional[str] = None
 
 
+# ── v2 nested context objects ─────────────────────────────────────────────────
+class StoreContext(BaseModel):
+    name: Optional[str] = None
+    persona: Optional[str] = None
+    aiRules: Optional[str] = None
+    language: Optional[str] = None
+
+
+class ConversationContext(BaseModel):
+    id: Optional[str] = None
+    channel: Optional[str] = None
+    ad_ref: Optional[str] = None
+    intent_level: Optional[str] = None    # "hot" | "warm" | "cold"
+    lead_stage: Optional[str] = None
+    customer_type: Optional[str] = None   # "new" | "returning"
+
+
 class ChatRequest(BaseModel):
-    conversationId: str
-    storeId: str
-    storeName: str
+    # ── v2 structured fields ──────────────────────────────────────────────────
+    store: Optional[StoreContext] = None
+    conversation: Optional[ConversationContext] = None
+    shipping: Optional[dict] = None       # new format: {wilaya: {home, bureau}}
+    # ── legacy fields (kept for backward compat) ─────────────────────────────
+    conversationId: Optional[str] = None
+    storeId: Optional[str] = None
+    storeName: Optional[str] = None
     aiSystemPrompt: Optional[str] = None
     history: list[Message]
     products: list[Product]
-    recentOrders: list[RecentOrder]
+    recentOrders: Optional[list[RecentOrder]] = None
     aiFlowState: Optional[str] = None
     detectedLanguage: Optional[str] = None
     shippingOptions: Optional[dict] = None
@@ -64,16 +87,18 @@ class OrderItem(BaseModel):
 
 
 class OrderAction(BaseModel):
-    type: str  # "create_order" | "cancel_order" | "none"
+    type: str  # "create_order" | "cancel_order" | "update_order" | "escalate_human" | "none"
     customerName: Optional[str] = None
     customerPhone: Optional[str] = None
     wilaya: Optional[str] = None
     address: Optional[str] = None
     items: Optional[list[OrderItem]] = None
+    reason: Optional[str] = None         # for escalate_human
+    updateData: Optional[dict] = None    # for update_order
 
 
 class ChatResponse(BaseModel):
-    reply: str
+    reply: Optional[str] = None          # None when escalating to human
     detectedLanguage: str
     action: OrderAction
 

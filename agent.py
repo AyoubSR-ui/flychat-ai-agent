@@ -114,7 +114,7 @@ LANG_MAP = {Language.FRENCH: "fr", Language.ENGLISH: "en", Language.ARABIC: "ar"
 
 SECTION_IDENTITY = """You are the professional AI sales agent for "{store_name}" — a COD e-commerce store in Algeria.
 Your role: assist customers warmly and efficiently — placing orders, answering questions, handling cancellations.
-You represent a real business. Be warm, concise, and trustworthy — like a top-tier sales agent.{flow_note}"""
+You represent a real business. Be warm, concise, and trustworthy — like a top-tier sales agent.{persona_note}{flow_note}"""
 
 SECTION_LANGUAGE = """
 ━━━ LANGUAGE RULES (ABSOLUTE — ZERO EXCEPTIONS) ━━━
@@ -365,57 +365,57 @@ SECTION_EXAMPLES = """
 PRODUCT DISPLAY FORMAT — ALWAYS multiline, NEVER inline:
 
 Arabic customer:
-جلابية السلطانة
-السعر: 3,500 دج
-الألوان: أزرق، أحمر، أخضر
-المقاسات: L، XL، XXL
+[اسم المنتج]
+السعر: [السعر] دج
+الألوان: [اللون 1]، [اللون 2]، [اللون 3]
+المقاسات: S، M، L، XL
 
 Latin/French customer:
-جلابية السلطانة
-Prix: 3,500 DZD
-Colors: Bleu, Rouge, Vert
-Tailles: L, XL, XXL
+[nom du produit]
+Prix: [prix] DZD
+Colors: [Couleur 1], [Couleur 2], [Couleur 3]
+Tailles: S, M, L, XL
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ARABIC DARIJA FULL ORDER FLOW (100% Arabic from start to finish):
 "سلام عليكم" → "وعليكم السلام 🌷 كيفاش نقدر نعاونك؟"
 "حبيت ندير طلبية" → "وي كاين، قوليلي شنو المنتج واللون والمقاس والكمية."
-"جلابية السلطانة لون أحمر مقاس L" → "مليح، تحب توصيل للدار ولا تستلم من الفرع؟"
+"[المنتج] لون [اللون] مقاس [المقاس]" → "مليح، تحب توصيل للدار ولا تستلم من الفرع؟"
 "للدار" → "واخا، عطيني الاسم الكامل، رقم الهاتف، الولاية والعنوان."
-"أيوب سي كبير 0653515151 تقرت كتلة 134 رقم 3" →
+"[الاسم الكامل] [الهاتف] [الولاية] [العنوان]" →
 ─────────────────────
 تأكيد الطلب:
-• المنتج: جلابية السلطانة أحمر L × 1
-• الاسم: أيوب سي كبير
-• الهاتف: 0653515151
-• الولاية: تقرت
-• العنوان: كتلة 134 رقم 3
-• الشحن: الى البيت — 800 دج
-• المجموع: 4,300 دج
+• المنتج: [المنتج] [اللون] [المقاس] × [الكمية]
+• الاسم: [الاسم]
+• الهاتف: [الهاتف]
+• الولاية: [الولاية]
+• العنوان: [العنوان]
+• الشحن: الى البيت — [سعر الشحن] دج
+• المجموع: [المجموع] دج
 كل شيء صح؟
 ─────────────────────
 "وي صح" → "تم تسجيل الطلب ✅ سنتواصل معك قريباً للتأكيد. نهارك زين 🌷"
 
 ❌ NEVER for Arabic customer:
-"Takid commande: Produit jalabiya..." — WRONG, Latin format
+"Takid commande: Produit..." — WRONG, Latin format
 "tm t2kid talab ✅ nhark zin" — WRONG, Latin confirmation
 "Koulchi sah?" — WRONG, Latin question
 
 LATIN DARIJA FULL ORDER FLOW (100% Latin from start to finish):
 "Hab notalb" → "mrhba 🌷 kifach nqdar n3awnk?"
-"jalabiya rouge L" → "mlih, tawsil l dar wala bureau?"
+"[produit] [couleur] [taille]" → "mlih, tawsil l dar wala bureau?"
 "l dar" → "3tini smiytek kamla, numéro téléphone, wilaya w adresse."
-"Hamida Zarkawi 0660191919 Oran cite 5 num 12" →
+"[Smiya Nom] [téléphone] [Wilaya] [adresse]" →
 ─────────────────────
 Takid commande:
-Produit: jalabiya sultaniya Rouge L × 1
-Smiya: Hamida Zarkawi
-Téléphone: 0660191919
-Wilaya: Oran
-Adresse: cite 5 num 12
-Livraison: l dar — 700 DZD
-Total: 4,200 DZD
+Produit: [produit] [couleur] [taille] × [qté]
+Smiya: [Nom Prénom]
+Téléphone: [téléphone]
+Wilaya: [wilaya]
+Adresse: [adresse]
+Livraison: l dar — [prix livraison] DZD
+Total: [total] DZD
 Koulchi sah?
 ─────────────────────
 "wah" → "tm t2kid talab ✅ nhark zin 🌸"
@@ -423,18 +423,18 @@ Koulchi sah?
 FRENCH FULL ORDER FLOW (100% French from start to finish):
 "Bonjour" → "Bonjour 🌷 comment puis-je vous aider?"
 "Je veux commander" → "Bien sûr, quel produit vous intéresse ?"
-"jalabiya rouge L" → "Parfait, livraison à domicile ou retrait en bureau ?"
+"[produit] [couleur] [taille]" → "Parfait, livraison à domicile ou retrait en bureau ?"
 "domicile" → "D'accord, votre nom complet, téléphone, wilaya et adresse ?"
-"Sarah Bouali 0661234567 Alger Bab Ezzouar" →
+"[Nom Prénom] [téléphone] [Wilaya] [adresse]" →
 ─────────────────────
 Récapitulatif de commande :
-Produit : Jalabiya Sultaniya Rouge L × 1
-Nom : Sarah Bouali
-Téléphone : 0661234567
-Wilaya : Alger
-Adresse : Bab Ezzouar
-Livraison : À domicile — 500 DZD
-Total : 4,000 DZD
+Produit : [Produit] [couleur] [taille] × [qté]
+Nom : [Nom Prénom]
+Téléphone : [téléphone]
+Wilaya : [wilaya]
+Adresse : [adresse]
+Livraison : À domicile — [prix livraison] DZD
+Total : [total] DZD
 Tout est correct ?
 ─────────────────────
 "Oui" → "Commande confirmée ✅ On vous contacte bientôt. Bonne journée 🌷"
@@ -462,7 +462,8 @@ SECTION_MANDATORY = """
 • If customer requests human agent → hand off immediately and professionally
 • Never share other customers' data
 • Payment is always COD
-{store_instructions}\""""
+• SIZE RULE: If a customer gives a numeric size, match it against the variants listed in the product catalog. Never assume a size chart — the available sizes are only those shown in the product variants.
+{store_rules_section}{store_instructions}\""""
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # INTENT CLASSIFIER
@@ -487,6 +488,70 @@ def classify_intent_fast(messages: list) -> str:
     if re.search(r'\b(prix|ch7al|شحال|price|combien|بشحال|thaman|kayen|dispo|disponible|3andkom|stock)\b', recent):
         return "inquiry"
     return "general"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DARIJA INTENT SIGNALS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+DARIJA_PRICE_SIGNALS = {
+    "ar": [r"شحال", r"بشحال", r"السعر", r"ثمن", r"بكاش"],
+    "lat": [r"\bch7al\b", r"\bbchhal\b", r"\bprix\b", r"\bcombien\b", r"\btaman\b"],
+}
+DARIJA_COLOR_SIGNALS = {
+    "ar": [r"لون", r"ألوان", r"اللون"],
+    "lat": [r"\bcouleur\b", r"\bcolor\b", r"\blowen\b", r"\blwan\b"],
+}
+DARIJA_SIZE_SIGNALS = {
+    "ar": [r"مقاس", r"حجم", r"قياس"],
+    "lat": [r"\btaille\b", r"\bpointure\b", r"\bsize\b", r"\bm9as\b", r"\bm9aas\b"],
+}
+DARIJA_DELIVERY_SIGNALS = {
+    "ar": [r"توصيل", r"ولاية", r"شحن", r"للدار", r"التوصيل"],
+    "lat": [r"\blivraison\b", r"\bwilaya\b", r"\btawsil\b", r"\btwsil\b"],
+}
+DARIJA_CONFIRMATION_SIGNALS = [
+    r"^(wah|ih|wi|oui|weh|wakha|sah|صح|نعم|ok|okay|c'est bon|correct|oui c'est bon|وي|إيه)$"
+]
+DARIJA_INTERESTED_SIGNALS = {
+    "ar": [r"حابة?", r"نبغي", r"نحب", r"نطلب"],
+    "lat": [r"\bnotalb\b", r"\bntlab\b", r"\bhab\b", r"\b7ab\b", r"\bn7eb\b"],
+}
+DARIJA_WHOLESALE_SIGNALS = {
+    "ar": [r"جملة", r"بالجملة", r"كمية\s+كبيرة"],
+    "lat": [r"\bgros\s+lot\b", r"\bjomla\b", r"\bgrossiste\b", r"\bquantit[eé]\b"],
+    "fr": [r"\ben\s+gros\b", r"\bgrossiste\b", r"\bquantit[eé]\b"],
+}
+
+def detect_customer_intent_type(text: str) -> str | None:
+    """Detect fine-grained customer intent signal from message text."""
+    t = text.lower()
+    wholesale_patterns = (
+        DARIJA_WHOLESALE_SIGNALS.get("ar", [])
+        + DARIJA_WHOLESALE_SIGNALS.get("lat", [])
+        + DARIJA_WHOLESALE_SIGNALS.get("fr", [])
+    )
+    for pattern in wholesale_patterns:
+        if re.search(pattern, t):
+            return "wholesale"
+    for pattern in DARIJA_CONFIRMATION_SIGNALS:
+        if re.search(pattern, t.strip()):
+            return "confirmation"
+    for pattern in DARIJA_INTERESTED_SIGNALS.get("ar", []) + DARIJA_INTERESTED_SIGNALS.get("lat", []):
+        if re.search(pattern, t):
+            return "ordering"
+    for pattern in DARIJA_PRICE_SIGNALS.get("ar", []) + DARIJA_PRICE_SIGNALS.get("lat", []):
+        if re.search(pattern, t):
+            return "price_inquiry"
+    for pattern in DARIJA_SIZE_SIGNALS.get("ar", []) + DARIJA_SIZE_SIGNALS.get("lat", []):
+        if re.search(pattern, t):
+            return "size_inquiry"
+    for pattern in DARIJA_COLOR_SIGNALS.get("ar", []) + DARIJA_COLOR_SIGNALS.get("lat", []):
+        if re.search(pattern, t):
+            return "color_inquiry"
+    for pattern in DARIJA_DELIVERY_SIGNALS.get("ar", []) + DARIJA_DELIVERY_SIGNALS.get("lat", []):
+        if re.search(pattern, t):
+            return "delivery_inquiry"
+    return None
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # LANGUAGE DETECTION
@@ -566,16 +631,47 @@ def build_product_catalog(products: list, language: str) -> str:
                     if parts: variants_str = "\n   Variants: " + " | ".join(parts)
             except Exception:
                 pass
-        image_str = ("\n   Image: " + str(p.imageUrl)) if getattr(p, 'imageUrl', None) else ""
+        image_url = getattr(p, 'imageUrl', None) or (
+            (getattr(p, 'images', None) or [None])[0]
+        )
+        image_str = ("\n   Image: " + str(image_url)) if image_url else ""
         desc_str = ("\n   Description: " + str(p.description)) if getattr(p, 'description', None) else ""
-        lines.append(f"{i}. {p.name} — {float(p.price):,.0f} DZD (stock: {p.stock}){variants_str}{desc_str}{image_str}")
+        stock = getattr(p, 'stock', None)
+        stock_str = f" (stock: {stock})" if stock is not None else ""
+        lines.append(f"{i}. {p.name} — {float(p.price):,.0f} DZD{stock_str}{variants_str}{desc_str}{image_str}")
     return "\n\n".join(lines)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # SHIPPING SECTION BUILDER
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def build_shipping_section(shipping_options: dict | None) -> str:
+def build_shipping_section(shipping_options: dict | None, shipping_new: dict | None = None) -> str:
+    # ── NEW format: {wilaya: {home, bureau}} — sent by bridge v2 ─────────────
+    if shipping_new and isinstance(shipping_new, dict):
+        price_lines = []
+        for wilaya, prices in shipping_new.items():
+            if not isinstance(prices, dict):
+                continue
+            home_p = prices.get("home", 0)
+            bureau_p = prices.get("bureau", 0)
+            if home_p and bureau_p:
+                price_lines.append(f"  {wilaya}: home={home_p} DZD | bureau={bureau_p} DZD")
+            elif home_p:
+                price_lines.append(f"  {wilaya}: home={home_p} DZD")
+            elif bureau_p:
+                price_lines.append(f"  {wilaya}: bureau={bureau_p} DZD")
+        if price_lines:
+            price_table = "\n".join(price_lines)
+            return (
+                "SHIPPING OPTIONS — 2 choices available:\n"
+                "1. Home delivery (للدار / l dar)\n"
+                "2. Bureau / pickup (من الفرع)\n"
+                "Ask customer which they prefer BEFORE showing order summary.\n\n"
+                "PRICES PER WILAYA (home | bureau):\n" + price_table + "\n\n"
+                "USAGE: When customer mentions wilaya, look up price above and include in order summary."
+            )
+
+    # ── OLD format: {homeDeliveryEnabled, wilayaPrices: {...}} ───────────────
     if not shipping_options:
         return "Ask customer — home delivery (الى البيت) or bureau (من الفرع)."
 
@@ -656,6 +752,40 @@ def get_unavailable_wilayas(shipping_options: dict | None) -> list[str]:
             result.append(wilaya)
     return result
 
+# NOTE FOR DEVELOPERS:
+# AI Rules are NOT set here in agent.py.
+# They are set by each store owner in their dashboard:
+#   AI Settings → AI Rules → textarea → Save rules
+# The rules are stored in stores.metadata.aiRules
+# and injected here dynamically per request.
+# This section is empty/skipped entirely when no rules are set.
+
+def inject_store_rules(ai_rules: str | None) -> str:
+    """
+    Injects store owner rules into the prompt.
+    Called only when rules exist — never hardcoded.
+
+    Example rules a store owner might set:
+    - "Never offer discounts unless the customer asks"
+    - "Always confirm wilaya before quoting shipping price"
+    - "If product is out of stock, offer a substitute"
+    - "Always reply in French for this store"
+
+    These are set by the owner in AI Settings > AI Rules section.
+    """
+    if not ai_rules or not ai_rules.strip():
+        return ""  # No rules set — skip this section entirely
+
+    return f"""
+=== STORE OWNER RULES (injected from AI Settings) ===
+The store owner has set the following rules.
+Follow them strictly in addition to your default behavior:
+
+{ai_rules.strip()}
+
+=== END OF STORE RULES ===
+"""
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # SELECTIVE PROMPT BUILDER
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -671,6 +801,10 @@ def build_prompt(
     shipping_section: str,
     ai_system_prompt: str | None,
     customer_gender: str | None = None,
+    persona: str | None = None,
+    ai_rules: str | None = None,
+    intent_level: str | None = None,
+    customer_type: str | None = None,
 ) -> str:
 
     lang_instructions = {
@@ -703,10 +837,12 @@ def build_prompt(
     elif customer_gender == "male":
         gender_note = "\nCUSTOMER IS MALE — use masculine: rak, dir, te9dar, 7ab, راك, دير, حبيت, تحب, تدير"
 
+    persona_note = ("\nSTORE PERSONA: " + persona) if persona else ""
     store_instructions = ("STORE-SPECIFIC INSTRUCTIONS:\n" + ai_system_prompt if ai_system_prompt else "")
+    store_rules_section = inject_store_rules(ai_rules)
 
     sections = [
-        SECTION_IDENTITY.format(store_name=store_name, flow_note=flow_note + gender_note),
+        SECTION_IDENTITY.format(store_name=store_name, persona_note=persona_note, flow_note=flow_note + gender_note),
         SECTION_LANGUAGE.format(lang_rule=lang_rule, greeting_rule=greeting_rule),
         SECTION_VOCABULARY,
         SECTION_STYLE,
@@ -739,7 +875,12 @@ def build_prompt(
             SECTION_SHIPPING.format(shipping_section=shipping_section),
         ]
 
-    sections.append(SECTION_MANDATORY.format(store_instructions=store_instructions))
+    sections.append(SECTION_MANDATORY.format(store_rules_section=store_rules_section, store_instructions=store_instructions))
+
+    intent_behavior = get_intent_behavior(intent_level, customer_type)
+    if intent_behavior:
+        sections.append("━━━ BEHAVIOR NOTE ━━━\n" + intent_behavior)
+
     return "\n".join(sections).strip()
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -791,6 +932,50 @@ def detect_gender_from_name(name: str | None) -> str | None:
     if first in male_names: return "male"
     if re.search(r'(ة|ى)$', name.strip().split()[0]): return "female"
     return None
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# INTENT BEHAVIOR INJECTION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def get_intent_behavior(intent_level: str | None, customer_type: str | None) -> str:
+    """Returns a behavior note to inject into the system prompt based on conversation metadata."""
+    parts = []
+    if intent_level == "hot":
+        parts.append("CUSTOMER INTENT: HIGH — customer is ready to order. Skip discovery questions. Collect remaining info directly.")
+    elif intent_level == "warm":
+        parts.append("CUSTOMER INTENT: WARM — customer is interested. Ask one qualifying question max, then move toward order.")
+    elif intent_level == "cold":
+        parts.append("CUSTOMER INTENT: COLD — customer is browsing. Share product benefits briefly, do not push for order.")
+    if customer_type == "returning":
+        parts.append("RETURNING CUSTOMER — greet warmly, skip generic intro, reference past orders if available.")
+    elif customer_type == "new":
+        parts.append("NEW CUSTOMER — briefly reassure about COD payment if they seem hesitant.")
+    return "\n".join(parts)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ANTI-REPETITION GUARD
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def is_duplicate_response(reply: str, history: list) -> bool:
+    """
+    Returns True if the generated reply is too similar (≥60% word overlap) to a
+    recent bot message. Prevents the agent from repeating the same price or info.
+    """
+    if not reply or not history:
+        return False
+    reply_words = set(reply.lower().split())
+    if len(reply_words) < 5:
+        return False
+    recent_bot = [m.content for m in history[-10:] if m.role in ("bot", "agent")]
+    for past_msg in recent_bot[-3:]:
+        past_words = set(past_msg.lower().split())
+        if len(past_words) < 5:
+            continue
+        overlap = len(reply_words & past_words) / max(len(reply_words), len(past_words))
+        if overlap >= 0.60:
+            print(f"[Agent] Duplicate response detected (overlap={overlap:.0%}) — will regenerate")
+            return True
+    return False
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # EXTRACTION PROMPT
@@ -1037,13 +1222,32 @@ async def process_message(request) -> dict:
                         if customer_gender:
                             break
 
+    # ── v2 structured payload fields (bridge sends both v2 + legacy) ─────────
+    store_v2 = getattr(request, 'store', None) or {}
+    conversation_v2 = getattr(request, 'conversation', None) or {}
+    store_name = store_v2.get('name') or getattr(request, 'storeName', None) or 'Store'
+    store_persona = store_v2.get('persona') or None
+    store_ai_rules = store_v2.get('aiRules') or None
+    intent_level = conversation_v2.get('intent_level') or None
+    customer_type = conversation_v2.get('customer_type') or None
+
+    # ── Wholesale escalation — skip AI, hand off to human ────────────────────
+    if detect_customer_intent_type(last_customer_msg) == "wholesale":
+        print(f"[Agent] Wholesale inquiry detected — escalating to human")
+        return {
+            "reply": None,
+            "detectedLanguage": language,
+            "action": {"type": "escalate_human", "reason": "wholesale_inquiry"},
+        }
+
     # ── Build context ─────────────────────────────────────────────────────────
     product_catalog = build_product_catalog(request.products, language)
+    shipping_new = getattr(request, 'shipping', None)
     shipping_opts = getattr(request, 'shippingOptions', None)
-    shipping_section = build_shipping_section(shipping_opts)
-    unavailable_wilayas = get_unavailable_wilayas(shipping_opts)
+    shipping_section = build_shipping_section(shipping_opts, shipping_new=shipping_new)
+    unavailable_wilayas = get_unavailable_wilayas(shipping_opts) if shipping_opts else []
 
-    if recent_orders := getattr(request, 'recentOrders', []):
+    if recent_orders := (getattr(request, 'recentOrders', None) or []):
         orders_context = "\n".join([
             f"• #{o.orderNumber} | {o.status} | {o.customerName or 'unknown'} | {o.customerPhone or 'no phone'}"
             for o in recent_orders
@@ -1057,7 +1261,7 @@ async def process_message(request) -> dict:
 
     system_prompt = build_prompt(
         intent=intent,
-        store_name=request.storeName,
+        store_name=store_name,
         language=language,
         is_first_turn=is_first_turn and not chosen_language,
         ai_flow_state=request.aiFlowState,
@@ -1066,6 +1270,10 @@ async def process_message(request) -> dict:
         shipping_section=shipping_section,
         ai_system_prompt=combined_system_prompt or None,
         customer_gender=customer_gender,
+        persona=store_persona,
+        ai_rules=store_ai_rules,
+        intent_level=intent_level,
+        customer_type=customer_type,
     )
 
     # ── AI reply with auto-retry ──────────────────────────────────────────────
@@ -1091,6 +1299,19 @@ async def process_message(request) -> dict:
             print(f"[Agent] AI call attempt {attempt + 1} failed: {e}")
             if attempt == 2:
                 reply = "سمحلي، ممكن تعاود وش قتلي "
+
+    # ── Anti-repetition guard: regenerate if reply is too similar to recent ──
+    if reply and is_duplicate_response(reply, history):
+        try:
+            response2 = await client.chat.completions.create(
+                model="gpt-4.1-mini",
+                max_tokens=700,
+                temperature=0.7,
+                messages=openai_messages,
+            )
+            reply = response2.choices[0].message.content.strip()
+        except Exception as e:
+            print(f"[Agent] Duplicate-guard retry failed: {e}")
 
     # ── Order extraction ──────────────────────────────────────────────────────
     extraction = await extract_order(history, request.products, unavailable_wilayas)
@@ -1144,3 +1365,44 @@ async def process_message(request) -> dict:
         "detectedLanguage": language,
         "action": action,
     }
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MANUAL TEST (comment out in production)
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# To test locally without starting the full FastAPI server:
+#
+# import asyncio
+# from types import SimpleNamespace
+#
+# async def _test():
+#     req = SimpleNamespace(
+#         # v2 structured fields
+#         store={"name": "Test Store", "persona": "Warm and helpful", "aiRules": None, "language": None},
+#         conversation={"intent_level": "warm", "customer_type": "new", "id": "test-conv-1"},
+#         shipping={"Alger": {"home": 500, "bureau": 300}, "Oran": {"home": 700, "bureau": 400}},
+#         # legacy fields
+#         storeName="Test Store",
+#         aiSystemPrompt=None,
+#         aiFlowState=None,
+#         detectedLanguage=None,
+#         shippingOptions=None,
+#         imageUrl=None,
+#         imageAccessToken=None,
+#         recentOrders=[],
+#         products=[
+#             SimpleNamespace(id="p1", name="Produit A", price=3500, stock=10,
+#                             variants=["Color:Rouge", "Color:Bleu", "Size:L", "Size:XL"],
+#                             imageUrl=None, images=[], description="Produit de qualité"),
+#         ],
+#         history=[
+#             SimpleNamespace(role="customer", content="salam, ch7al had lproduit?"),
+#         ],
+#     )
+#     result = await process_message(req)
+#     print("Reply:", result["reply"])
+#     print("Language:", result["detectedLanguage"])
+#     print("Action:", result["action"])
+#
+# if __name__ == "__main__":
+#     asyncio.run(_test())
