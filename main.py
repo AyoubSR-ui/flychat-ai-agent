@@ -5,6 +5,7 @@ from typing import Optional
 import os
 from agent import process_message
 from communication_optimizer import (
+    estimate_optimizer_run,
     run_optimization_pipeline,
     approve_improvements,
     get_optimizer_status,
@@ -120,22 +121,38 @@ def health():
 
 # ─── Communication Optimizer Endpoints ───────────────────────────────────────
 
-@app.post("/optimize")
-async def trigger_optimization(request: dict):
+@app.post("/optimize/estimate")
+async def estimate_endpoint(request: dict):
     """
-    Triggered from FlyChat dashboard or on schedule.
-    Receives filtered conversation data from the Node.js backend.
-    Runs analysis pipeline, saves output as pending_approval.
+    Called first — estimates cost before any API calls or credit deduction.
+    Returns credits_required vs available so the UI can gate the run.
     """
     conversations = request.get("conversations", [])
     store_id = request.get("storeId")
+    plan = request.get("plan", "starter")
+
+    if not conversations:
+        return {"error": "No conversations provided", "ready_to_run": False}
+
+    estimate = estimate_optimizer_run(conversations, store_id, plan)
+    return estimate
+
+
+@app.post("/optimize")
+async def trigger_optimization(request: dict):
+    """
+    Runs full pipeline. Blocked and returns billing info if insufficient credits.
+    """
+    conversations = request.get("conversations", [])
+    store_id = request.get("storeId")
+    plan = request.get("plan", "starter")
     auto_approve = request.get("autoApprove", False)
 
     if not conversations:
         return {"error": "No conversation data provided"}
 
-    result = run_optimization_pipeline(conversations, store_id, auto_approve)
-    return {"status": "complete", "result": result}
+    result = run_optimization_pipeline(conversations, store_id, plan, auto_approve)
+    return result
 
 
 @app.post("/optimize/approve")
